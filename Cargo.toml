@@ -6,6 +6,15 @@ edition = "2021"
 description = "An open-source web3 roguelike game"
 license = "MIT OR Apache-2.0"
 license-file = "LICENSE"
+default-run = "client"
+
+[[bin]]
+name = "client"
+path = "src/bin/client.rs"
+
+[[bin]]
+name = "server"
+path = "src/bin/server.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -21,3 +30,4 @@ lto = "thin"
 [dependencies]
 bevy = "0.7"
 benimator = "3"
+leafwing-input-manager = "0.3"
