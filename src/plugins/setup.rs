@@ -22,7 +22,10 @@ impl Plugin for Setup {
 }
 
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    let mut camera = OrthographicCameraBundle::new_2d();
+    camera.orthographic_projection.scale /= 3.0;
+
+    commands.spawn_bundle(camera);
 }
 
 fn spawn_player(
@@ -33,7 +36,6 @@ fn spawn_player(
     commands
         .spawn_bundle(SpriteSheetBundle {
             texture_atlas: spritesheets.wizard.clone(),
-            transform: Transform::from_scale(Vec3::splat(10.0)),
             ..default()
         })
         .insert(Player)
