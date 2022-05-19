@@ -1,9 +1,22 @@
 [package]
-name = "bevy-roguelike"
+name = "magus-supreme"
 version = "0.1.0"
+authors = "Hasan Mukhlis {hzlntcld@gmail.com}"
 edition = "2021"
+description = "An open-source web3 roguelike game"
+license = "MIT OR Apache-2.0"
+license-file = "LICENSE"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+lto = "thin"
 
 [dependencies]
 bevy = "0.7"
