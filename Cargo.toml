@@ -4,7 +4,6 @@ version = "0.1.0"
 authors = ["Hasan Mukhlis {hzlntcld@gmail.com}"]
 edition = "2021"
 description = "An open-source web3 roguelike game"
-license = "MIT OR Apache-2.0"
 license-file = "LICENSE"
 default-run = "client"
 
