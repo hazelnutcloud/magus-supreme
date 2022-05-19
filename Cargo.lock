@@ -173,6 +173,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
+name = "benimator"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3757e448e2dd8fd3c41515885a8b0bcff4e1556dc9506a952b452ba8df2e93cf"
+dependencies = [
+ "bevy_app",
+ "bevy_asset",
+ "bevy_core",
+ "bevy_ecs",
+ "bevy_reflect",
+ "bevy_sprite",
+]
+
+[[package]]
 name = "bevy"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -197,6 +211,7 @@ dependencies = [
 name = "bevy-roguelike"
 version = "0.1.0"
 dependencies = [
+ "benimator",
  "bevy",
 ]
 
