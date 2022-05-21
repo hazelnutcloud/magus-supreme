@@ -19,7 +19,8 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system_to_stage(StartupStage::PreStartup, load_assets)
+        app
+            .add_startup_system_to_stage(StartupStage::PreStartup, load_assets)
             .add_startup_system_to_stage(StartupStage::PreStartup, load_animations)
             .add_startup_system(spawn)
             .add_system(movement)
@@ -38,7 +39,7 @@ struct Player;
 struct MovementSpeed(f32);
 
 #[derive(Component)]
-struct Velocity(Vec2);
+pub struct Velocity(Vec2);
 
 #[derive(Bundle)]
 struct PlayerBundle {
@@ -109,7 +110,7 @@ fn load_assets(
     server: Res<AssetServer>,
     mut atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    let image = server.load("wizard.png");
+    let image = server.load("spritesheets/wizard.png");
     let atlas = TextureAtlas::from_grid(image, Vec2::splat(32.), 36, 1);
     let handle = atlases.add(atlas);
 
@@ -137,6 +138,7 @@ fn spawn(mut commands: Commands, spritesheet: Res<PlayerAtlas>, animations: Res<
         .spawn_bundle(PlayerBundle {
             sprite_sheet: SpriteSheetBundle {
                 texture_atlas: spritesheet.0.clone(),
+                transform: Transform::from_xyz(0., 0., 10.),
                 ..Default::default()
             },
             input_manager: InputManagerBundle {

@@ -27,6 +27,24 @@ opt-level = 3
 lto = "thin"
 
 [dependencies]
-bevy = "0.7"
 benimator = "3"
 leafwing-input-manager = "0.3"
+bevy_ecs_tilemap = "0.6.0"
+tiled = "0.10.2"
+anyhow = "1.0"
+log = "0.4"
+
+[dependencies.bevy]
+version = "0.7"
+default-features = false
+features = [
+    "bevy_winit",
+    "filesystem_watcher",
+    "bevy_render",
+    "bevy_core_pipeline",
+    "bevy_sprite",
+    "bevy_text",
+    "bevy_ui",
+    "png",
+    "dynamic"
+]
