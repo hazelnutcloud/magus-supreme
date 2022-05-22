@@ -12,7 +12,7 @@ use leafwing_input_manager::{
     Actionlike, InputManagerBundle,
 };
 
-use crate::{GameCollisionLayer, tilemap::TILEMAP_HEIGHT};
+use crate::{tilemap::TILEMAP_HEIGHT, GameCollisionLayer};
 
 // =========================================================
 // ==================== PLAYER PLUGIN ======================
@@ -49,7 +49,7 @@ pub struct PhysicsBundle {
     acceleration: Acceleration,
     physics_material: PhysicMaterial,
     constraint: RotationConstraints,
-    collision_layers: CollisionLayers 
+    collision_layers: CollisionLayers,
 }
 
 #[derive(Bundle)]
@@ -182,14 +182,7 @@ fn spawn(mut commands: Commands, spritesheet: Res<PlayerAtlas>, animations: Res<
 
 // ---- handle movement ------
 fn movement(
-    mut query: Query<
-        (
-            &ActionState<PlayerAction>,
-            &MovementSpeed,
-            &mut Velocity,
-        ),
-        With<Player>,
-    >
+    mut query: Query<(&ActionState<PlayerAction>, &MovementSpeed, &mut Velocity), With<Player>>,
 ) {
     let (action_state, movement_speed, mut velocity) = query.single_mut();
     if action_state.pressed(PlayerAction::Up) == action_state.pressed(PlayerAction::Down) {
@@ -255,9 +248,7 @@ fn movement_animation(
 }
 
 // ---- update z index -------
-fn update_z_index(
-    mut query: Query<&mut Transform, (With<Player>, Changed<Transform>)>
-) {
+fn update_z_index(mut query: Query<&mut Transform, (With<Player>, Changed<Transform>)>) {
     if let Ok(mut player) = query.get_single_mut() {
         player.translation.z = TILEMAP_HEIGHT - (player.translation.y - 9.); // distance of player's feet from top of map
     }

@@ -2,8 +2,8 @@ use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use heron::prelude::*;
 use leafwing_input_manager::plugin::InputManagerPlugin;
-use magus_supreme::player::{PlayerPlugin, PlayerAction};
 use magus_supreme::camera::MagusCameraPlugin;
+use magus_supreme::player::{PlayerAction, PlayerPlugin};
 use magus_supreme::tilemap::Tilemap;
 
 fn main() {

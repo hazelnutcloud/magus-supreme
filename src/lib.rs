@@ -7,5 +7,5 @@ pub mod tilemap;
 #[derive(PhysicsLayer)]
 pub enum GameCollisionLayer {
     World,
-    Player
+    Player,
 }
