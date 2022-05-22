@@ -255,50 +255,52 @@ pub fn process_loaded_tile_maps(
                                 map.add_layer(&mut commands, layer_index as u16, layer_entity);
                             }
                             tiled::LayerType::ObjectLayer(object_layer) => {
-                                let object_bundles: Vec<ColliderObjectBundle> = object_layer.objects().filter_map(|object| {
-                                    if object.obj_type != String::from("collision") {
-                                        return None;
-                                    }
-
-                                    let (width, height) = match object.shape {
-                                        tiled::ObjectShape::Rect { width, height } => {
-                                            (width, height)
+                                let object_bundles: Vec<ColliderObjectBundle> = object_layer
+                                    .objects()
+                                    .filter_map(|object| {
+                                        if object.obj_type != String::from("collision") {
+                                            return None;
                                         }
-                                        _ => (0., 0.)
-                                    };
 
-                                    Some(ColliderObjectBundle {
-                                        transform: TransformBundle {
-                                            local: Transform::from_xyz(
-                                                object.x + width / 2. - 400.,
-                                                -(object.y + height / 2. - 600.),
-                                                10.,
-                                            ),
-                                            ..Default::default()
-                                        },
-                                        collision_shape: match object.shape {
+                                        let (width, height) = match object.shape {
                                             tiled::ObjectShape::Rect { width, height } => {
-                                                CollisionShape::Cuboid {
-                                                    half_extends: Vec3::new(
-                                                        width / 2.,
-                                                        height / 2.,
-                                                        0.,
-                                                    ),
-                                                    border_radius: None,
+                                                (width, height)
+                                            }
+                                            _ => (0., 0.),
+                                        };
+
+                                        Some(ColliderObjectBundle {
+                                            transform: TransformBundle {
+                                                local: Transform::from_xyz(
+                                                    object.x + width / 2. - 400.,
+                                                    -(object.y + height / 2. - 600.),
+                                                    10.,
+                                                ),
+                                                ..Default::default()
+                                            },
+                                            collision_shape: match object.shape {
+                                                tiled::ObjectShape::Rect { width, height } => {
+                                                    CollisionShape::Cuboid {
+                                                        half_extends: Vec3::new(
+                                                            width / 2.,
+                                                            height / 2.,
+                                                            0.,
+                                                        ),
+                                                        border_radius: None,
+                                                    }
+                                                }
+                                                _ => {
+                                                    eprintln!("tiled: unsupported object shape!");
+                                                    CollisionShape::Sphere { radius: 0. }
                                                 }
                                             },
-                                            _ => {
-                                                eprintln!("tiled: unsupported object shape!");
-                                                CollisionShape::Sphere { radius: 0. }
-                                            }
-                                        },
-                                        collision_layer: CollisionLayers::none()
-                                            .with_group(GameCollisionLayer::World)
-                                            .with_mask(GameCollisionLayer::Player),
-                                        body: RigidBody::Static
+                                            collision_layer: CollisionLayers::none()
+                                                .with_group(GameCollisionLayer::World)
+                                                .with_mask(GameCollisionLayer::Player),
+                                            body: RigidBody::Static,
+                                        })
                                     })
-                                })
-                                .collect();
+                                    .collect();
 
                                 commands.spawn_batch(object_bundles);
                             }
