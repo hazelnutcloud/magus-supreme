@@ -3,7 +3,6 @@ mod loader;
 use bevy::prelude::*;
 use bevy::render::render_resource::TextureUsages;
 use bevy_ecs_tilemap::prelude::*;
-use heron::Velocity;
 
 use crate::player::Player;
 
@@ -36,12 +35,10 @@ fn spawn(mut commands: Commands, server: Res<AssetServer>) {
 
 fn sort_z_by_y(
         mut map_query: MapQuery,
-        mut player_query: Query<(&mut Transform, ChangeTrackers<Velocity>), With<Player>>
+        mut player_query: Query<&mut Transform, (With<Player>, Changed<Transform>)>,
+        mut above: Local<bool>
     ) {
-    if let Ok((mut player_transform, velocity_changed)) = player_query.get_single_mut() {
-        //only execute if player just moved
-        if !velocity_changed.is_changed() { return }
-        
+    if let Ok(mut player_transform) = player_query.get_single_mut() {
         //get player sprite's foot position
         let base_x = player_transform.translation.x;
         let base_y = player_transform.translation.y - 9.;
@@ -56,9 +53,13 @@ fn sort_z_by_y(
             2u16,
         ) {
             //if we are, set the player's z-index to be below the layer's z-index which is 20
-            player_transform.translation.z = 19.;
+            if !*above { player_transform.translation.z = 19.; }
+
+            *above = true;
         } else {
-            player_transform.translation.z = 21.;
+            if *above { player_transform.translation.z = 21.; }
+
+            *above = false;
         }
     }
 }
