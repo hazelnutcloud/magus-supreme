@@ -1,10 +1,10 @@
-mod tiled_ecs;
+mod loader;
 
 use bevy::prelude::*;
 use bevy::render::render_resource::TextureUsages;
 use bevy_ecs_tilemap::prelude::*;
 
-use self::tiled_ecs::{TiledMap, TiledMapBundle, TiledMapPlugin};
+use self::loader::{TiledMap, TiledMapBundle, TiledMapPlugin};
 
 pub struct Tilemap;
 
