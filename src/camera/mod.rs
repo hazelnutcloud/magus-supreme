@@ -27,6 +27,7 @@ fn follow_player(
     let player_transform = player_query.single();
     let mut camera_transform = camera_query.single_mut();
 
-    let pos_dif = player_transform.translation - camera_transform.translation;
-    camera_transform.translation += pos_dif * time.delta_seconds() * 2.;
+    let pos_dif = Vec2::new(player_transform.translation.x, player_transform.translation.y) - Vec2::new(camera_transform.translation.x, camera_transform.translation.y);
+    camera_transform.translation.x += pos_dif.x * time.delta_seconds() * 2.;
+    camera_transform.translation.y += pos_dif.y * time.delta_seconds() * 2.;
 }

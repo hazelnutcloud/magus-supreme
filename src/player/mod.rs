@@ -164,7 +164,7 @@ fn spawn(mut commands: Commands, spritesheet: Res<PlayerAtlas>, animations: Res<
         .spawn_bundle(PlayerBundle {
             sprite_sheet: SpriteSheetBundle {
                 texture_atlas: spritesheet.0.clone(),
-                transform: Transform::from_xyz(0., 0., 10.),
+                transform: Transform::from_xyz(0., 0., 22.),
                 ..Default::default()
             },
             input_manager: InputManagerBundle {

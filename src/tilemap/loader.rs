@@ -250,7 +250,7 @@ pub fn process_loaded_tile_maps(
                                 commands.entity(layer_entity).insert(Transform::from_xyz(
                                     offset_x,
                                     -offset_y,
-                                    layer_index as f32,
+                                    layer_index as f32 * 10.,
                                 ));
                                 map.add_layer(&mut commands, layer_index as u16, layer_entity);
                             }
