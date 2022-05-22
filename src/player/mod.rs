@@ -6,10 +6,13 @@ use std::{
 
 use benimator::{Play, SpriteSheetAnimation};
 use bevy::prelude::*;
+use heron::prelude::*;
 use leafwing_input_manager::{
     prelude::{ActionState, InputMap},
     Actionlike, InputManagerBundle,
 };
+
+use crate::GameCollisionLayer;
 
 // =========================================================
 // ==================== PLAYER PLUGIN ======================
@@ -19,8 +22,7 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_startup_system_to_stage(StartupStage::PreStartup, load_assets)
+        app.add_startup_system_to_stage(StartupStage::PreStartup, load_assets)
             .add_startup_system_to_stage(StartupStage::PreStartup, load_animations)
             .add_startup_system(spawn)
             .add_system(movement)
@@ -33,19 +35,28 @@ impl Plugin for PlayerPlugin {
 // =========================================================
 
 #[derive(Component)]
-struct Player;
+pub struct Player;
 
 #[derive(Component)]
-struct MovementSpeed(f32);
+pub struct MovementSpeed(f32);
 
-#[derive(Component)]
-pub struct Velocity(Vec2);
+#[derive(Bundle, Default)]
+pub struct PhysicsBundle {
+    body: RigidBody,
+    collision_shape: CollisionShape,
+    velocity: Velocity,
+    acceleration: Acceleration,
+    physics_material: PhysicMaterial,
+    constraint: RotationConstraints,
+    collision_layers: CollisionLayers 
+}
 
 #[derive(Bundle)]
 struct PlayerBundle {
     player: Player,
     movement_speed: MovementSpeed,
-    velocity: Velocity,
+    #[bundle]
+    physics: PhysicsBundle,
     #[bundle]
     sprite_sheet: SpriteSheetBundle,
     #[bundle]
@@ -73,6 +84,21 @@ impl PlayerBundle {
         input_map.insert(Dash, KeyCode::LShift);
 
         input_map
+    }
+
+    fn default_physics() -> PhysicsBundle {
+        PhysicsBundle {
+            collision_shape: CollisionShape::Capsule {
+                half_segment: 5.,
+                radius: 7.,
+            },
+            collision_layers: CollisionLayers::none()
+                .with_group(GameCollisionLayer::Player)
+                .with_mask(GameCollisionLayer::World),
+            constraint: RotationConstraints::lock(),
+            body: RigidBody::Dynamic,
+            ..Default::default()
+        }
     }
 }
 
@@ -111,7 +137,7 @@ fn load_assets(
     mut atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     let image = server.load("spritesheets/wizard.png");
-    let atlas = TextureAtlas::from_grid(image, Vec2::splat(32.), 36, 1);
+    let atlas = TextureAtlas::from_grid(image, Vec2::new(26., 27.), 36, 1);
     let handle = atlases.add(atlas);
 
     commands.insert_resource(PlayerAtlas(handle));
@@ -145,8 +171,8 @@ fn spawn(mut commands: Commands, spritesheet: Res<PlayerAtlas>, animations: Res<
                 action_state: ActionState::default(),
                 input_map: PlayerBundle::default_input_map(),
             },
-            movement_speed: MovementSpeed(75.),
-            velocity: Velocity(Vec2::ZERO),
+            physics: PlayerBundle::default_physics(),
+            movement_speed: MovementSpeed(1.),
             player: Player,
         })
         .insert(animations.idle.clone())
@@ -167,34 +193,32 @@ fn movement(
     time: Res<Time>,
 ) {
     let (action_state, mut transform, movement_speed, mut velocity) = query.single_mut();
-    velocity.0 = Vec2::ZERO;
-
     if action_state.pressed(PlayerAction::Up) == action_state.pressed(PlayerAction::Down) {
-        velocity.0.y = 0.;
+        velocity.linear.y = 0.;
     } else {
         if action_state.pressed(PlayerAction::Up) {
-            velocity.0.y = movement_speed.0;
+            velocity.linear.y = movement_speed.0;
         } else if action_state.pressed(PlayerAction::Down) {
-            velocity.0.y = -movement_speed.0;
+            velocity.linear.y = -movement_speed.0;
         }
     }
 
     if action_state.pressed(PlayerAction::Left) == action_state.pressed(PlayerAction::Right) {
-        velocity.0.x = 0.;
+        velocity.linear.x = 0.;
     } else {
         if action_state.pressed(PlayerAction::Left) {
-            velocity.0.x = -movement_speed.0;
+            velocity.linear.x = -movement_speed.0;
         } else if action_state.pressed(PlayerAction::Right) {
-            velocity.0.x = movement_speed.0;
+            velocity.linear.x = movement_speed.0;
         }
     }
 
-    if velocity.0.x != 0. && velocity.0.y != 0. {
-        velocity.0 = velocity.0.normalize().mul(movement_speed.0);
+    if velocity.linear.x != 0. && velocity.linear.y != 0. {
+        velocity.linear = velocity.linear.normalize().mul(movement_speed.0);
     }
 
-    transform.translation.x += velocity.0.x * time.delta_seconds();
-    transform.translation.y += velocity.0.y * time.delta_seconds();
+    transform.translation.x += velocity.linear.x * time.delta_seconds();
+    transform.translation.y += velocity.linear.y * time.delta_seconds();
 }
 
 // --- animate movement ------
@@ -212,10 +236,10 @@ fn movement_animation(
 ) {
     let (velocity, mut sprite, mut animation) = query.single_mut();
 
-    let is_moving_horizontally = velocity.0.x != 0.;
+    let is_moving_horizontally = velocity.linear.x != 0.;
 
     if is_moving_horizontally {
-        let is_facing_left = velocity.0.x < 0.;
+        let is_facing_left = velocity.linear.x < 0.;
         if is_facing_left != *last_facing_is_left {
             *last_facing_is_left = is_facing_left;
         }
@@ -223,7 +247,7 @@ fn movement_animation(
 
     sprite.flip_x = *last_facing_is_left;
 
-    let is_moving = velocity.0 != Vec2::ZERO;
+    let is_moving = velocity.linear != Vec3::ZERO;
 
     if is_moving {
         if animation.deref() == &animations.moving {

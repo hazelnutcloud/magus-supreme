@@ -33,6 +33,7 @@ bevy_ecs_tilemap = "0.6.0"
 tiled = "0.10.2"
 anyhow = "1.0"
 log = "0.4"
+heron = { version = "3", features = ["2d", "debug-2d"] }
 
 [dependencies.bevy]
 version = "0.7"

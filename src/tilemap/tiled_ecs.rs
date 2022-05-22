@@ -1,10 +1,13 @@
 use bevy::math::Vec2;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
+use heron::prelude::*;
 use std::{collections::HashMap, io::BufReader};
 
 use bevy::asset::{AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset};
 use bevy::reflect::TypeUuid;
+
+use crate::GameCollisionLayer;
 
 #[derive(Default)]
 pub struct TiledMapPlugin;
@@ -30,6 +33,15 @@ pub struct TiledMapBundle {
     pub map: Map,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
+}
+
+#[derive(Default, Bundle)]
+pub struct ColliderObjectBundle {
+    #[bundle]
+    transform: TransformBundle,
+    body: RigidBody,
+    collision_shape: CollisionShape,
+    collision_layer: CollisionLayers,
 }
 
 pub struct TiledLoader;
@@ -151,71 +163,70 @@ pub fn process_loaded_tile_maps(
                 for (tileset_index, tileset) in tiled_map.map.tilesets().iter().enumerate() {
                     // Once materials have been created/added we need to then create the layers.
                     for (layer_index, layer) in tiled_map.map.layers().enumerate() {
-                        let tile_width = tileset.tile_width as f32;
-                        let tile_height = tileset.tile_height as f32;
+                        match layer.layer_type() {
+                            tiled::LayerType::TileLayer(tile_layer) => {
+                                let tile_width = tileset.tile_width as f32;
+                                let tile_height = tileset.tile_height as f32;
 
-                        let _tile_space = tileset.spacing as f32; // TODO: re-add tile spacing.. :p
+                                let _tile_space = tileset.spacing as f32; // TODO: re-add tile spacing.. :p
 
-                        let offset_x = layer.offset_x;
-                        let offset_y = layer.offset_y;
+                                let offset_x = layer.offset_x;
+                                let offset_y = layer.offset_y;
 
-                        let mut map_settings = LayerSettings::new(
-                            MapSize(
-                                (tiled_map.map.width as f32 / 64.0).ceil() as u32,
-                                (tiled_map.map.height as f32 / 64.0).ceil() as u32,
-                            ),
-                            ChunkSize(64, 64),
-                            TileSize(tile_width, tile_height),
-                            TextureSize(
-                                tileset.image.as_ref().unwrap().width as f32,
-                                tileset.image.as_ref().unwrap().height as f32,
-                            ),
-                        );
-                        map_settings.grid_size = Vec2::new(
-                            tiled_map.map.tile_width as f32,
-                            tiled_map.map.tile_height as f32,
-                        );
+                                let mut map_settings = LayerSettings::new(
+                                    MapSize(
+                                        (tiled_map.map.width as f32 / 64.0).ceil() as u32,
+                                        (tiled_map.map.height as f32 / 64.0).ceil() as u32,
+                                    ),
+                                    ChunkSize(64, 64),
+                                    TileSize(tile_width, tile_height),
+                                    TextureSize(
+                                        tileset.image.as_ref().unwrap().width as f32,
+                                        tileset.image.as_ref().unwrap().height as f32,
+                                    ),
+                                );
+                                map_settings.grid_size = Vec2::new(
+                                    tiled_map.map.tile_width as f32,
+                                    tiled_map.map.tile_height as f32,
+                                );
 
-                        map_settings.mesh_type = match tiled_map.map.orientation {
-                            tiled::Orientation::Hexagonal => {
-                                TilemapMeshType::Hexagon(HexType::Row) // TODO: Support hex for real.
-                            }
-                            tiled::Orientation::Isometric => {
-                                TilemapMeshType::Isometric(IsoType::Diamond)
-                            }
-                            tiled::Orientation::Staggered => {
-                                TilemapMeshType::Isometric(IsoType::Staggered)
-                            }
-                            tiled::Orientation::Orthogonal => TilemapMeshType::Square,
-                        };
+                                map_settings.mesh_type = match tiled_map.map.orientation {
+                                    tiled::Orientation::Hexagonal => {
+                                        TilemapMeshType::Hexagon(HexType::Row) // TODO: Support hex for real.
+                                    }
+                                    tiled::Orientation::Isometric => {
+                                        TilemapMeshType::Isometric(IsoType::Diamond)
+                                    }
+                                    tiled::Orientation::Staggered => {
+                                        TilemapMeshType::Isometric(IsoType::Staggered)
+                                    }
+                                    tiled::Orientation::Orthogonal => TilemapMeshType::Square,
+                                };
 
-                        let layer_entity = LayerBuilder::<TileBundle>::new_batch(
-                            &mut commands,
-                            map_settings.clone(),
-                            &mut meshes,
-                            tiled_map
-                                .tilesets
-                                .get(&tileset_index)
-                                .unwrap()
-                                .clone_weak(),
-                            0u16,
-                            layer_index as u16,
-                            move |mut tile_pos| {
-                                if tile_pos.0 >= tiled_map.map.width
-                                    || tile_pos.1 >= tiled_map.map.height
-                                {
-                                    return None;
-                                }
+                                let layer_entity = LayerBuilder::<TileBundle>::new_batch(
+                                    &mut commands,
+                                    map_settings.clone(),
+                                    &mut meshes,
+                                    tiled_map.tilesets.get(&tileset_index).unwrap().clone_weak(),
+                                    0u16,
+                                    layer_index as u16,
+                                    move |mut tile_pos| {
+                                        if tile_pos.0 >= tiled_map.map.width
+                                            || tile_pos.1 >= tiled_map.map.height
+                                        {
+                                            return None;
+                                        }
 
-                                if tiled_map.map.orientation == tiled::Orientation::Orthogonal {
-                                    tile_pos.1 = (tiled_map.map.height - 1) as u32 - tile_pos.1;
-                                }
+                                        if tiled_map.map.orientation
+                                            == tiled::Orientation::Orthogonal
+                                        {
+                                            tile_pos.1 =
+                                                (tiled_map.map.height - 1) as u32 - tile_pos.1;
+                                        }
 
-                                let x = tile_pos.0 as i32;
-                                let y = tile_pos.1 as i32;
+                                        let x = tile_pos.0 as i32;
+                                        let y = tile_pos.1 as i32;
 
-                                match layer.layer_type() {
-                                    tiled::LayerType::TileLayer(tile_layer) => {
                                         tile_layer.get_tile(x, y).and_then(|tile| {
                                             if tile.tileset_index() != tileset_index {
                                                 return None;
@@ -233,18 +244,68 @@ pub fn process_loaded_tile_maps(
                                                 ..Default::default()
                                             })
                                         })
-                                    }
-                                    _ => panic!("Unsupported layer type"),
-                                }
-                            },
-                        );
+                                    },
+                                );
 
-                        commands.entity(layer_entity).insert(Transform::from_xyz(
-                            offset_x,
-                            -offset_y,
-                            layer_index as f32,
-                        ));
-                        map.add_layer(&mut commands, layer_index as u16, layer_entity);
+                                commands.entity(layer_entity).insert(Transform::from_xyz(
+                                    offset_x,
+                                    -offset_y,
+                                    layer_index as f32,
+                                ));
+                                map.add_layer(&mut commands, layer_index as u16, layer_entity);
+                            }
+                            tiled::LayerType::ObjectLayer(object_layer) => {
+                                let object_bundles: Vec<ColliderObjectBundle> = object_layer.objects().filter_map(|object| {
+                                    if object.obj_type != String::from("collision") {
+                                        return None;
+                                    }
+
+                                    let (width, height) = match object.shape {
+                                        tiled::ObjectShape::Rect { width, height } => {
+                                            (width, height)
+                                        }
+                                        _ => (0., 0.)
+                                    };
+
+                                    Some(ColliderObjectBundle {
+                                        transform: TransformBundle {
+                                            local: Transform::from_xyz(
+                                                object.x + width / 2. - 400.,
+                                                -(object.y + height / 2. - 600.),
+                                                10.,
+                                            ),
+                                            ..Default::default()
+                                        },
+                                        collision_shape: match object.shape {
+                                            tiled::ObjectShape::Rect { width, height } => {
+                                                CollisionShape::Cuboid {
+                                                    half_extends: Vec3::new(
+                                                        width / 2.,
+                                                        height / 2.,
+                                                        0.,
+                                                    ),
+                                                    border_radius: None,
+                                                }
+                                            },
+                                            _ => {
+                                                eprintln!("tiled: unsupported object shape!");
+                                                CollisionShape::Sphere { radius: 0. }
+                                            }
+                                        },
+                                        collision_layer: CollisionLayers::none()
+                                            .with_group(GameCollisionLayer::World)
+                                            .with_mask(GameCollisionLayer::Player),
+                                        body: RigidBody::Static
+                                    })
+                                })
+                                .collect();
+
+                                commands.spawn_batch(object_bundles);
+                            }
+                            _ => {
+                                eprintln!("tiled: unsupported layer type!")
+                            }
+                        }
                     }
                 }
             }
