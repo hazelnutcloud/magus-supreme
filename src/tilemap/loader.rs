@@ -86,6 +86,7 @@ impl AssetLoader for TiledLoader {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn process_loaded_tile_maps(
     mut commands: Commands,
     mut map_events: EventReader<AssetEvent<TiledMap>>,
@@ -207,7 +208,7 @@ pub fn process_loaded_tile_maps(
 
                                 let layer_entity = LayerBuilder::<TileBundle>::new_batch(
                                     &mut commands,
-                                    map_settings.clone(),
+                                    map_settings,
                                     &mut meshes,
                                     tiled_map.tilesets.get(&tileset_index).unwrap().clone_weak(),
                                     0u16,
@@ -264,7 +265,7 @@ pub fn process_loaded_tile_maps(
                                 let object_bundles: Vec<ColliderObjectBundle> = object_layer
                                     .objects()
                                     .filter_map(|object| {
-                                        if object.obj_type != String::from("collision") {
+                                        if object.obj_type != *"collision" {
                                             return None;
                                         }
 

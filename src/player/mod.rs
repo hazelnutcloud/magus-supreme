@@ -194,22 +194,18 @@ fn movement(
     let (action_state, movement_speed, mut velocity) = query.single_mut();
     if action_state.pressed(PlayerAction::Up) == action_state.pressed(PlayerAction::Down) {
         velocity.linear.y = 0.;
-    } else {
-        if action_state.pressed(PlayerAction::Up) {
-            velocity.linear.y = movement_speed.0;
-        } else if action_state.pressed(PlayerAction::Down) {
-            velocity.linear.y = -movement_speed.0;
-        }
+    } else if action_state.pressed(PlayerAction::Up) {
+        velocity.linear.y = movement_speed.0;
+    } else if action_state.pressed(PlayerAction::Down) {
+        velocity.linear.y = -movement_speed.0;
     }
 
     if action_state.pressed(PlayerAction::Left) == action_state.pressed(PlayerAction::Right) {
         velocity.linear.x = 0.;
-    } else {
-        if action_state.pressed(PlayerAction::Left) {
-            velocity.linear.x = -movement_speed.0;
-        } else if action_state.pressed(PlayerAction::Right) {
-            velocity.linear.x = movement_speed.0;
-        }
+    } else if action_state.pressed(PlayerAction::Left) {
+        velocity.linear.x = -movement_speed.0;
+    } else if action_state.pressed(PlayerAction::Right) {
+        velocity.linear.x = movement_speed.0;
     }
 
     if velocity.linear.x != 0. && velocity.linear.y != 0. {
