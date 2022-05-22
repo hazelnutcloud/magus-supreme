@@ -9,6 +9,8 @@ use bevy::reflect::TypeUuid;
 
 use crate::GameCollisionLayer;
 
+use super::TILEMAP_HEIGHT;
+
 #[derive(Default)]
 pub struct TiledMapPlugin;
 
@@ -250,7 +252,11 @@ pub fn process_loaded_tile_maps(
                                 commands.entity(layer_entity).insert(Transform::from_xyz(
                                     offset_x,
                                     -offset_y,
-                                    layer_index as f32 * 10.,
+                                    if layer_index == 2 {
+                                        38. * 16. // distance of layer from top of map in pixels
+                                    } else {
+                                        layer_index as f32
+                                    },
                                 ));
                                 map.add_layer(&mut commands, layer_index as u16, layer_entity);
                             }
@@ -272,9 +278,9 @@ pub fn process_loaded_tile_maps(
                                         Some(ColliderObjectBundle {
                                             transform: TransformBundle {
                                                 local: Transform::from_xyz(
-                                                    object.x + width / 2. - 400.,
-                                                    -(object.y + height / 2. - 600.),
-                                                    10.,
+                                                    object.x + width / 2.,
+                                                    -(object.y + height / 2. - TILEMAP_HEIGHT),
+                                                    998.,
                                                 ),
                                                 ..Default::default()
                                             },

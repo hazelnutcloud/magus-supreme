@@ -12,7 +12,7 @@ use leafwing_input_manager::{
     Actionlike, InputManagerBundle,
 };
 
-use crate::GameCollisionLayer;
+use crate::{GameCollisionLayer, tilemap::TILEMAP_HEIGHT};
 
 // =========================================================
 // ==================== PLAYER PLUGIN ======================
@@ -26,7 +26,8 @@ impl Plugin for PlayerPlugin {
             .add_startup_system_to_stage(StartupStage::PreStartup, load_animations)
             .add_startup_system(spawn)
             .add_system(movement)
-            .add_system(movement_animation);
+            .add_system(movement_animation)
+            .add_system(update_z_index);
     }
 }
 
@@ -164,7 +165,7 @@ fn spawn(mut commands: Commands, spritesheet: Res<PlayerAtlas>, animations: Res<
         .spawn_bundle(PlayerBundle {
             sprite_sheet: SpriteSheetBundle {
                 texture_atlas: spritesheet.0.clone(),
-                transform: Transform::from_xyz(0., 0., 22.),
+                transform: Transform::from_xyz(400., 200., 0.),
                 ..Default::default()
             },
             input_manager: InputManagerBundle {
@@ -254,5 +255,14 @@ fn movement_animation(
             return;
         }
         *animation = animations.idle.clone();
+    }
+}
+
+// ---- update z index -------
+fn update_z_index(
+    mut query: Query<&mut Transform, (With<Player>, Changed<Transform>)>
+) {
+    if let Ok(mut player) = query.get_single_mut() {
+        player.translation.z = TILEMAP_HEIGHT - (player.translation.y - 9.); // distance of player's feet from top of map
     }
 }

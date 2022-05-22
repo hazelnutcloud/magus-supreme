@@ -4,9 +4,10 @@ use bevy::prelude::*;
 use bevy::render::render_resource::TextureUsages;
 use bevy_ecs_tilemap::prelude::*;
 
-use crate::player::Player;
-
 use self::loader::{TiledMap, TiledMapBundle, TiledMapPlugin};
+
+pub const TILEMAP_WIDTH: f32 = 800.;
+pub const TILEMAP_HEIGHT: f32 = 800.;
 
 pub struct Tilemap;
 
@@ -15,8 +16,7 @@ impl Plugin for Tilemap {
         app.add_plugin(TilemapPlugin)
             .add_plugin(TiledMapPlugin)
             .add_startup_system(spawn)
-            .add_system(set_texture_filters_to_nearest)
-            .add_system(sort_z_by_y);
+            .add_system(set_texture_filters_to_nearest);
     }
 }
 
@@ -28,40 +28,9 @@ fn spawn(mut commands: Commands, server: Res<AssetServer>) {
     commands.entity(map_entity).insert_bundle(TiledMapBundle {
         tiled_map: handle,
         map: Map::new(0u16, map_entity),
-        transform: Transform::from_xyz(-400.0, -200.0, 1.0),
+        transform: Transform::from_xyz(0.0, 0.0, 0.0),
         ..Default::default()
     });
-}
-
-fn sort_z_by_y(
-        mut map_query: MapQuery,
-        mut player_query: Query<&mut Transform, (With<Player>, Changed<Transform>)>,
-        mut above: Local<bool>
-    ) {
-    if let Ok(mut player_transform) = player_query.get_single_mut() {
-        //get player sprite's foot position
-        let base_x = player_transform.translation.x;
-        let base_y = player_transform.translation.y - 9.;
-
-        //check if we are on a tile that we want to sort by y
-        if let Ok(_tile) = map_query.get_tile_entity(
-            TilePos(
-                ((base_x + 400.) / 16.).floor() as u32,
-                ((base_y + 200.) / 16.).floor() as u32,
-            ),
-            0u16,
-            2u16,
-        ) {
-            //if we are, set the player's z-index to be below the layer's z-index which is 20
-            if !*above { player_transform.translation.z = 19.; }
-
-            *above = true;
-        } else {
-            if *above { player_transform.translation.z = 21.; }
-
-            *above = false;
-        }
-    }
 }
 
 fn set_texture_filters_to_nearest(
