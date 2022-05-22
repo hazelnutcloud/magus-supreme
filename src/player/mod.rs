@@ -172,7 +172,7 @@ fn spawn(mut commands: Commands, spritesheet: Res<PlayerAtlas>, animations: Res<
                 input_map: PlayerBundle::default_input_map(),
             },
             physics: PlayerBundle::default_physics(),
-            movement_speed: MovementSpeed(1.),
+            movement_speed: MovementSpeed(75.),
             player: Player,
         })
         .insert(animations.idle.clone())
@@ -184,15 +184,13 @@ fn movement(
     mut query: Query<
         (
             &ActionState<PlayerAction>,
-            &mut Transform,
             &MovementSpeed,
             &mut Velocity,
         ),
         With<Player>,
-    >,
-    time: Res<Time>,
+    >
 ) {
-    let (action_state, mut transform, movement_speed, mut velocity) = query.single_mut();
+    let (action_state, movement_speed, mut velocity) = query.single_mut();
     if action_state.pressed(PlayerAction::Up) == action_state.pressed(PlayerAction::Down) {
         velocity.linear.y = 0.;
     } else {
@@ -216,9 +214,6 @@ fn movement(
     if velocity.linear.x != 0. && velocity.linear.y != 0. {
         velocity.linear = velocity.linear.normalize().mul(movement_speed.0);
     }
-
-    transform.translation.x += velocity.linear.x * time.delta_seconds();
-    transform.translation.y += velocity.linear.y * time.delta_seconds();
 }
 
 // --- animate movement ------

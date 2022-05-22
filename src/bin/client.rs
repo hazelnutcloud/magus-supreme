@@ -14,7 +14,6 @@ fn main() {
         .add_plugin(InputPlugin)
         .add_plugin(InputManagerPlugin::<PlayerAction>::default())
         .add_plugin(PhysicsPlugin::default())
-        .insert_resource(PhysicsTime::new(75.))
         .add_plugin(PlayerPlugin)
         .add_plugin(MagusCameraPlugin)
         .run();
