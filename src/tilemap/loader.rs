@@ -271,6 +271,8 @@ pub fn process_loaded_tile_maps(
                                     -offset_y,
                                     if layer_index == 2 {
                                         38. * 16. // distance of layer from top of map in pixels
+                                    } else if layer_index == 3 {
+                                        800.
                                     } else {
                                         layer_index as f32
                                     },
