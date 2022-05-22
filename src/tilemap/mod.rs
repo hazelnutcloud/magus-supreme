@@ -20,6 +20,11 @@ impl Plugin for Tilemap {
     }
 }
 
+// =========================================================
+// ======================= SYSTEMS =========================
+// =========================================================
+
+// ----- spawn tilemap -------
 fn spawn(mut commands: Commands, server: Res<AssetServer>) {
     let handle: Handle<TiledMap> = server.load("tilemap/dungeon-tilemap.tmx");
 
@@ -33,6 +38,7 @@ fn spawn(mut commands: Commands, server: Res<AssetServer>) {
     });
 }
 
+//  boilerplate to make code run 
 fn set_texture_filters_to_nearest(
     mut texture_events: EventReader<AssetEvent<Image>>,
     mut textures: ResMut<Assets<Image>>,

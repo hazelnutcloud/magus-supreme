@@ -11,6 +11,11 @@ impl Plugin for MagusCameraPlugin {
     }
 }
 
+// =========================================================
+// ======================= SYSTEMS =========================
+// =========================================================
+
+// ----- spawn camera --------
 pub fn spawn_camera(mut commands: Commands) {
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.orthographic_projection.scale /= 3.;
@@ -19,6 +24,7 @@ pub fn spawn_camera(mut commands: Commands) {
     commands.spawn_bundle(camera);
 }
 
+// ----- follow player -------
 fn follow_player(
     player_query: Query<&Transform, (With<Player>, Without<Camera2d>)>,
     mut camera_query: Query<&mut Transform, With<Camera2d>>,

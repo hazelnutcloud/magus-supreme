@@ -3,7 +3,6 @@ use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use heron::prelude::*;
 use std::{collections::HashMap, io::BufReader};
-
 use bevy::asset::{AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset};
 use bevy::reflect::TypeUuid;
 
@@ -22,12 +21,20 @@ impl Plugin for TiledMapPlugin {
     }
 }
 
+// =========================================================
+// ======================= ASSETS ==========================
+// =========================================================
+
 #[derive(TypeUuid)]
 #[uuid = "e51081d0-6168-4881-a1c6-4249b2000d7f"]
 pub struct TiledMap {
     pub map: tiled::Map,
     pub tilesets: HashMap<usize, Handle<Image>>,
 }
+
+// =========================================================
+// ===================== COMPONENTS ========================
+// =========================================================
 
 #[derive(Default, Bundle)]
 pub struct TiledMapBundle {
@@ -45,6 +52,10 @@ pub struct ColliderObjectBundle {
     collision_shape: CollisionShape,
     collision_layer: CollisionLayers,
 }
+
+// =========================================================
+// ======================= LOADER ==========================
+// =========================================================
 
 pub struct TiledLoader;
 
@@ -86,6 +97,11 @@ impl AssetLoader for TiledLoader {
     }
 }
 
+// =========================================================
+// ======================= SYSTEMS =========================
+// =========================================================
+
+//  process loaded tilemaps --
 #[allow(clippy::too_many_arguments)]
 pub fn process_loaded_tile_maps(
     mut commands: Commands,
@@ -261,6 +277,7 @@ pub fn process_loaded_tile_maps(
                                 ));
                                 map.add_layer(&mut commands, layer_index as u16, layer_entity);
                             }
+                            // spawn collider entities
                             tiled::LayerType::ObjectLayer(object_layer) => {
                                 let object_bundles: Vec<ColliderObjectBundle> = object_layer
                                     .objects()
