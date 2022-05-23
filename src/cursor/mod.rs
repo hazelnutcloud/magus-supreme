@@ -1,4 +1,4 @@
-use bevy::{prelude::*, input::mouse::MouseMotion, render::camera::Camera2d};
+use bevy::{prelude::*, input::mouse::MouseMotion};
 use heron::{RigidBody, Velocity};
 
 use crate::{player::{SPAWN_POINT, Player}, camera::ZOOM};
@@ -15,8 +15,7 @@ impl Plugin for CursorPlugin {
             .add_startup_system_to_stage(StartupStage::PreStartup, load_sprite)
             .add_startup_system(spawn)
             .add_system(move_cursor_parent)
-            .add_system(move_cursor)
-            .add_system(clamp_cursor);
+            .add_system(move_cursor);
     }
 }
 
@@ -86,32 +85,23 @@ fn move_cursor_parent(
 fn move_cursor(
     mut cursor_query: Query<&mut Transform, With<Cursor>>,
     mut cursor_evr: EventReader<MouseMotion>,
+    windows: Res<Windows>,
 ) {
     for ev in cursor_evr.iter() {
         let mut cursor_transform = cursor_query.single_mut();
 
         cursor_transform.translation.x += ev.delta.x / 3.;
         cursor_transform.translation.y += -ev.delta.y / 3.;
-    }
-}
 
-// ----- clamp cursor --------
-fn clamp_cursor(
-    windows: Res<Windows>,
-    camera_query: Query<&Transform, With<Camera2d>>,
-    mut cursor_query: Query<(&GlobalTransform, &mut Transform), (With<Cursor>, Without<Camera2d>)>,
-) {
-    if let Some(window) = windows.get_primary() {
-        let camera_transform = camera_query.single();
-        let (cursor_global_transform, mut cursor_transform) = cursor_query.single_mut();
-
-        cursor_transform.translation.x = cursor_transform.translation.x.clamp(
-            - window.width() / (2. * ZOOM) + (camera_transform.translation.x - (cursor_global_transform.translation.x - cursor_transform.translation.x)),
-            window.width() / (2. * ZOOM) + (camera_transform.translation.x - (cursor_global_transform.translation.x - cursor_transform.translation.x))
-        );
-        cursor_transform.translation.y = cursor_transform.translation.y.clamp(
-            - window.height() / (2. * ZOOM) + (camera_transform.translation.y - (cursor_global_transform.translation.y - cursor_transform.translation.y)),
-            window.height() / (2. * ZOOM) + (camera_transform.translation.y - (cursor_global_transform.translation.y - cursor_transform.translation.y))
-        );
+        if let Some(window) = windows.get_primary() {
+            cursor_transform.translation.x = cursor_transform.translation.x.clamp(
+                - window.width() / (2. * ZOOM) + 0.1 * cursor_transform.translation.x,
+                window.width() / (2. * ZOOM) + 0.1 * cursor_transform.translation.x
+            );
+            cursor_transform.translation.y = cursor_transform.translation.y.clamp(
+                - window.height() / (2. * ZOOM) + 0.1 * cursor_transform.translation.y,
+                window.height() / (2. * ZOOM) + 0.1 * cursor_transform.translation.y
+            );
+        }
     }
 }
