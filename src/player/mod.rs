@@ -5,7 +5,7 @@ use std::{
 };
 
 use benimator::{Play, SpriteSheetAnimation};
-use bevy::prelude::*;
+use bevy::{prelude::*, math::const_vec3};
 use heron::prelude::*;
 use leafwing_input_manager::{
     prelude::{ActionState, InputMap},
@@ -13,6 +13,12 @@ use leafwing_input_manager::{
 };
 
 use crate::{tilemap::TILEMAP_HEIGHT, GameCollisionLayer};
+
+// =========================================================
+// ====================== CONSTANTS ========================
+// =========================================================
+
+pub const SPAWN_POINT: Vec3 = const_vec3!([400., 200., 0.]);
 
 // =========================================================
 // ==================== PLAYER PLUGIN ======================
@@ -165,7 +171,7 @@ fn spawn(mut commands: Commands, spritesheet: Res<PlayerAtlas>, animations: Res<
         .spawn_bundle(PlayerBundle {
             sprite_sheet: SpriteSheetBundle {
                 texture_atlas: spritesheet.0.clone(),
-                transform: Transform::from_xyz(400., 200., 0.),
+                transform: Transform::from_translation(SPAWN_POINT),
                 ..Default::default()
             },
             input_manager: InputManagerBundle {
@@ -182,9 +188,9 @@ fn spawn(mut commands: Commands, spritesheet: Res<PlayerAtlas>, animations: Res<
 
 // ---- handle movement ------
 fn movement(
-    mut query: Query<(&ActionState<PlayerAction>, &MovementSpeed, &mut Velocity), With<Player>>,
+    mut query: Query<(&ActionState<PlayerAction>, &mut Velocity, &MovementSpeed), With<Player>>,
 ) {
-    let (action_state, movement_speed, mut velocity) = query.single_mut();
+    let (action_state,  mut velocity, movement_speed) = query.single_mut();
     if action_state.pressed(PlayerAction::Up) == action_state.pressed(PlayerAction::Down) {
         velocity.linear.y = 0.;
     } else if action_state.pressed(PlayerAction::Up) {
