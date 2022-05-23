@@ -3,6 +3,10 @@ use heron::{RigidBody, Velocity};
 
 use crate::{player::{SPAWN_POINT, Player}, camera::ZOOM};
 
+// =========================================================
+// ==================== CURSOR PLUGIN ======================
+// =========================================================
+
 pub struct CursorPlugin;
 
 impl Plugin for CursorPlugin {
@@ -91,6 +95,7 @@ fn move_cursor(
     }
 }
 
+// ----- clamp cursor --------
 fn clamp_cursor(
     windows: Res<Windows>,
     camera_query: Query<&Transform, With<Camera2d>>,

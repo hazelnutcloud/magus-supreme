@@ -2,6 +2,10 @@ use bevy::{prelude::*, render::camera::Camera2d};
 
 use crate::{player::{Player, SPAWN_POINT}, cursor::Cursor};
 
+// =========================================================
+// ==================== CAMERA PLUGIN ======================
+// =========================================================
+
 pub struct MagusCameraPlugin;
 
 impl Plugin for MagusCameraPlugin {

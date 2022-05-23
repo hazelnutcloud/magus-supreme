@@ -6,7 +6,7 @@ use leafwing_input_manager::plugin::InputManagerPlugin;
 use magus_supreme::camera::MagusCameraPlugin;
 use magus_supreme::cursor::CursorPlugin;
 use magus_supreme::player::{PlayerAction, PlayerPlugin};
-use magus_supreme::tilemap::Tilemap;
+use magus_supreme::tilemap::MagusTilemapPlugin;
 
 fn main() {
     App::new()
@@ -18,7 +18,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(benimator::AnimationPlugin::default())
-        .add_plugin(Tilemap)
+        .add_plugin(MagusTilemapPlugin)
         .add_plugin(InputPlugin)
         .add_plugin(InputManagerPlugin::<PlayerAction>::default())
         .add_plugin(PhysicsPlugin::default())

@@ -6,12 +6,20 @@ use bevy_ecs_tilemap::prelude::*;
 
 use self::loader::{TiledMap, TiledMapBundle, TiledMapPlugin};
 
+// =========================================================
+// ====================== CONSTANTS ========================
+// =========================================================
+
 pub const TILEMAP_WIDTH: f32 = 800.;
 pub const TILEMAP_HEIGHT: f32 = 800.;
 
-pub struct Tilemap;
+// =========================================================
+// =================== TILEMAP PLUGIN ======================
+// =========================================================
 
-impl Plugin for Tilemap {
+pub struct MagusTilemapPlugin;
+
+impl Plugin for MagusTilemapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(TilemapPlugin)
             .add_plugin(TiledMapPlugin)
