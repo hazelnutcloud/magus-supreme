@@ -1,11 +1,11 @@
 use std::{
     fmt::Debug,
-    ops::{Deref, Mul},
+    ops::Deref,
     time::Duration,
 };
 
 use benimator::{Play, SpriteSheetAnimation};
-use bevy::{prelude::*, math::const_vec3};
+use bevy::{math::const_vec3, prelude::*};
 use heron::prelude::*;
 use leafwing_input_manager::{
     prelude::{ActionState, InputMap},
@@ -26,14 +26,35 @@ pub const SPAWN_POINT: Vec3 = const_vec3!([400., 200., 0.]);
 
 pub struct PlayerPlugin;
 
-impl Plugin for PlayerPlugin {
+impl PlayerPlugin {
+    pub fn client() -> PlayerPluginClient {
+        PlayerPluginClient
+    }
+
+    pub fn server() -> PlayerPluginServer {
+        PlayerPluginServer
+    }
+}
+pub struct PlayerPluginClient;
+
+impl Plugin for PlayerPluginClient {
     fn build(&self, app: &mut App) {
-        app.add_startup_system_to_stage(StartupStage::PreStartup, load_assets)
+        app
+            .add_startup_system_to_stage(StartupStage::PreStartup, load_assets)
             .add_startup_system_to_stage(StartupStage::PreStartup, load_animations)
             .add_startup_system(spawn)
             .add_system(movement)
             .add_system(movement_animation)
             .add_system(update_z_index);
+    }
+}
+
+pub struct PlayerPluginServer;
+
+impl Plugin for PlayerPluginServer {
+    fn build(&self, app: &mut App) {
+        app
+            .add_system(movement);
     }
 }
 
@@ -190,26 +211,17 @@ fn spawn(mut commands: Commands, spritesheet: Res<PlayerAtlas>, animations: Res<
 fn movement(
     mut query: Query<(&ActionState<PlayerAction>, &mut Velocity, &MovementSpeed), With<Player>>,
 ) {
-    let (action_state,  mut velocity, movement_speed) = query.single_mut();
-    if action_state.pressed(PlayerAction::Up) == action_state.pressed(PlayerAction::Down) {
-        velocity.linear.y = 0.;
-    } else if action_state.pressed(PlayerAction::Up) {
-        velocity.linear.y = movement_speed.0;
-    } else if action_state.pressed(PlayerAction::Down) {
-        velocity.linear.y = -movement_speed.0;
+    let (action_state, mut velocity, movement_speed) = query.single_mut();
+
+    let x = (action_state.pressed(PlayerAction::Right) as i8 - action_state.pressed(PlayerAction::Left) as i8) as f32;
+    let y = (action_state.pressed(PlayerAction::Up) as i8 - action_state.pressed(PlayerAction::Down) as i8) as f32;
+
+    if x != 0. && y != 0. {
+        velocity.linear = Vec3::from_slice(&[x, y, 0.]).normalize() * movement_speed.0;
+        return;
     }
 
-    if action_state.pressed(PlayerAction::Left) == action_state.pressed(PlayerAction::Right) {
-        velocity.linear.x = 0.;
-    } else if action_state.pressed(PlayerAction::Left) {
-        velocity.linear.x = -movement_speed.0;
-    } else if action_state.pressed(PlayerAction::Right) {
-        velocity.linear.x = movement_speed.0;
-    }
-
-    if velocity.linear.x != 0. && velocity.linear.y != 0. {
-        velocity.linear = velocity.linear.normalize().mul(movement_speed.0);
-    }
+    velocity.linear = Vec3::from_slice(&[x, y, 0.]) * movement_speed.0;
 }
 
 // --- animate movement ------

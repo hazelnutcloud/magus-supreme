@@ -22,7 +22,7 @@ fn main() {
         .add_plugin(InputPlugin)
         .add_plugin(InputManagerPlugin::<PlayerAction>::default())
         .add_plugin(PhysicsPlugin::default())
-        .add_plugin(PlayerPlugin)
+        .add_plugin(PlayerPlugin::client())
         .add_plugin(MagusCameraPlugin)
         .add_plugin(CursorPlugin)
         .add_system(exit_on_esc_system)
