@@ -1,12 +1,10 @@
 use bevy::math::Vec2;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
-use heron::prelude::*;
+use bevy_rapier2d::prelude::*;
 use std::{collections::HashMap, io::BufReader};
 use bevy::asset::{AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset};
 use bevy::reflect::TypeUuid;
-
-use crate::GameCollisionLayer;
 
 use super::TILEMAP_HEIGHT;
 
@@ -44,13 +42,12 @@ pub struct TiledMapBundle {
     pub global_transform: GlobalTransform,
 }
 
-#[derive(Default, Bundle)]
+#[derive(Bundle)]
 pub struct ColliderObjectBundle {
     #[bundle]
     transform: TransformBundle,
     body: RigidBody,
-    collision_shape: CollisionShape,
-    collision_layer: CollisionLayers,
+    collider: Collider
 }
 
 // =========================================================
@@ -304,26 +301,16 @@ pub fn process_loaded_tile_maps(
                                                 ),
                                                 ..Default::default()
                                             },
-                                            collision_shape: match object.shape {
+                                            collider: match object.shape {
                                                 tiled::ObjectShape::Rect { width, height } => {
-                                                    CollisionShape::Cuboid {
-                                                        half_extends: Vec3::new(
-                                                            width / 2.,
-                                                            height / 2.,
-                                                            0.,
-                                                        ),
-                                                        border_radius: None,
-                                                    }
-                                                }
+                                                    Collider::cuboid(width / 2., height / 2.)
+                                                },
                                                 _ => {
                                                     eprintln!("tiled: unsupported object shape!");
-                                                    CollisionShape::Sphere { radius: 0. }
+                                                    Collider::ball(0.)
                                                 }
                                             },
-                                            collision_layer: CollisionLayers::none()
-                                                .with_group(GameCollisionLayer::World)
-                                                .with_mask(GameCollisionLayer::Player),
-                                            body: RigidBody::Static,
+                                            body: RigidBody::Fixed,
                                         })
                                     })
                                     .collect();

@@ -1,5 +1,5 @@
 use bevy::{prelude::*, input::mouse::MouseMotion};
-use heron::{RigidBody, Velocity};
+use bevy_rapier2d::prelude::*;
 
 use crate::{player::{SPAWN_POINT, Player}, camera::ZOOM};
 

@@ -6,13 +6,13 @@ use std::{
 
 use benimator::{Play, SpriteSheetAnimation};
 use bevy::{math::const_vec3, prelude::*};
-use heron::prelude::*;
+use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::{
     prelude::{ActionState, InputMap},
     Actionlike, InputManagerBundle,
 };
 
-use crate::{tilemap::TILEMAP_HEIGHT, GameCollisionLayer};
+use crate::tilemap::TILEMAP_HEIGHT;
 
 // =========================================================
 // ====================== CONSTANTS ========================
@@ -68,15 +68,12 @@ pub struct Player;
 #[derive(Component)]
 pub struct MovementSpeed(f32);
 
-#[derive(Bundle, Default)]
+#[derive(Bundle)]
 pub struct PhysicsBundle {
     body: RigidBody,
-    collision_shape: CollisionShape,
+    collider: Collider,
     velocity: Velocity,
-    acceleration: Acceleration,
-    physics_material: PhysicMaterial,
-    constraint: RotationConstraints,
-    collision_layers: CollisionLayers,
+    constraint: LockedAxes,
 }
 
 #[derive(Bundle)]
@@ -116,16 +113,10 @@ impl PlayerBundle {
 
     fn default_physics() -> PhysicsBundle {
         PhysicsBundle {
-            collision_shape: CollisionShape::Capsule {
-                half_segment: 5.,
-                radius: 7.,
-            },
-            collision_layers: CollisionLayers::none()
-                .with_group(GameCollisionLayer::Player)
-                .with_mask(GameCollisionLayer::World),
-            constraint: RotationConstraints::lock(),
+            collider: Collider::capsule_y(5., 5.),
+            constraint: LockedAxes::ROTATION_LOCKED,
             body: RigidBody::Dynamic,
-            ..Default::default()
+            velocity: Velocity::default()
         }
     }
 }
@@ -217,11 +208,11 @@ fn movement(
     let y = (action_state.pressed(PlayerAction::Up) as i8 - action_state.pressed(PlayerAction::Down) as i8) as f32;
 
     if x != 0. && y != 0. {
-        velocity.linear = Vec3::from_slice(&[x, y, 0.]).normalize() * movement_speed.0;
+        velocity.linvel = Vec2::new(x, y).normalize() * movement_speed.0;
         return;
     }
 
-    velocity.linear = Vec3::from_slice(&[x, y, 0.]) * movement_speed.0;
+    velocity.linvel = Vec2::new(x, y) * movement_speed.0;
 }
 
 // --- animate movement ------
@@ -239,10 +230,10 @@ fn movement_animation(
 ) {
     let (velocity, mut sprite, mut animation) = query.single_mut();
 
-    let is_moving_horizontally = velocity.linear.x != 0.;
+    let is_moving_horizontally = velocity.linvel.x != 0.;
 
     if is_moving_horizontally {
-        let is_facing_left = velocity.linear.x < 0.;
+        let is_facing_left = velocity.linvel.x < 0.;
         if is_facing_left != *last_facing_is_left {
             *last_facing_is_left = is_facing_left;
         }
@@ -250,7 +241,7 @@ fn movement_animation(
 
     sprite.flip_x = *last_facing_is_left;
 
-    let is_moving = velocity.linear != Vec3::ZERO;
+    let is_moving = velocity.linvel != Vec2::ZERO;
 
     if is_moving {
         if animation.deref() == &animations.moving {
