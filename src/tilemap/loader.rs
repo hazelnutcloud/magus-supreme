@@ -1,23 +1,12 @@
+use bevy::asset::{AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset};
 use bevy::math::Vec2;
 use bevy::prelude::*;
+use bevy::reflect::TypeUuid;
 use bevy_ecs_tilemap::prelude::*;
 use bevy_rapier2d::prelude::*;
 use std::{collections::HashMap, io::BufReader};
-use bevy::asset::{AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset};
-use bevy::reflect::TypeUuid;
 
 use super::TILEMAP_HEIGHT;
-
-#[derive(Default)]
-pub struct TiledMapPlugin;
-
-impl Plugin for TiledMapPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_asset::<TiledMap>()
-            .add_asset_loader(TiledLoader)
-            .add_system(process_loaded_tile_maps);
-    }
-}
 
 // =========================================================
 // ======================= ASSETS ==========================
@@ -25,9 +14,15 @@ impl Plugin for TiledMapPlugin {
 
 #[derive(TypeUuid)]
 #[uuid = "e51081d0-6168-4881-a1c6-4249b2000d7f"]
-pub struct TiledMap {
+pub struct TiledMapClient {
     pub map: tiled::Map,
     pub tilesets: HashMap<usize, Handle<Image>>,
+}
+
+#[derive(TypeUuid)]
+#[uuid = "0aebca64-a816-4bd0-8488-bf1a06982558"]
+pub struct TiledMapServer {
+    pub map: tiled::Map,
 }
 
 // =========================================================
@@ -36,7 +31,7 @@ pub struct TiledMap {
 
 #[derive(Default, Bundle)]
 pub struct TiledMapBundle {
-    pub tiled_map: Handle<TiledMap>,
+    pub tiled_map: Handle<TiledMapClient>,
     pub map: Map,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
@@ -47,7 +42,7 @@ pub struct ColliderObjectBundle {
     #[bundle]
     transform: TransformBundle,
     body: RigidBody,
-    collider: Collider
+    collider: Collider,
 }
 
 // =========================================================
@@ -56,7 +51,18 @@ pub struct ColliderObjectBundle {
 
 pub struct TiledLoader;
 
-impl AssetLoader for TiledLoader {
+impl TiledLoader {
+    pub fn client() -> TiledLoaderClient {
+        TiledLoaderClient
+    }
+    pub fn server() -> TiledLoaderServer {
+        TiledLoaderServer
+    }
+}
+
+pub struct TiledLoaderClient;
+
+impl AssetLoader for TiledLoaderClient {
     fn load<'a>(
         &'a self,
         bytes: &'a [u8],
@@ -79,11 +85,35 @@ impl AssetLoader for TiledLoader {
                 dependencies.push(asset_path);
             }
 
-            let loaded_asset = LoadedAsset::new(TiledMap {
+            let loaded_asset = LoadedAsset::new(TiledMapClient {
                 map,
                 tilesets: handles,
             });
             load_context.set_default_asset(loaded_asset.with_dependencies(dependencies));
+            Ok(())
+        })
+    }
+
+    fn extensions(&self) -> &[&str] {
+        static EXTENSIONS: &[&str] = &["tmx"];
+        EXTENSIONS
+    }
+}
+
+pub struct TiledLoaderServer;
+
+impl AssetLoader for TiledLoaderServer {
+    fn load<'a>(
+        &'a self,
+        bytes: &'a [u8],
+        load_context: &'a mut LoadContext,
+    ) -> BoxedFuture<'a, anyhow::Result<(), anyhow::Error>> {
+        Box::pin(async move {
+            let mut loader = tiled::Loader::new();
+            let map = loader.load_tmx_map_from(BufReader::new(bytes), load_context.path())?;
+
+            let loaded_asset = LoadedAsset::new(TiledMapServer { map });
+            load_context.set_default_asset(loaded_asset);
             Ok(())
         })
     }
@@ -100,17 +130,17 @@ impl AssetLoader for TiledLoader {
 
 //  process loaded tilemaps --
 #[allow(clippy::too_many_arguments)]
-pub fn process_loaded_tile_maps(
+pub fn process_loaded_tile_maps_client(
     mut commands: Commands,
-    mut map_events: EventReader<AssetEvent<TiledMap>>,
-    maps: Res<Assets<TiledMap>>,
+    mut map_events: EventReader<AssetEvent<TiledMapClient>>,
+    maps: Res<Assets<TiledMapClient>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut query: Query<(Entity, &Handle<TiledMap>, &mut Map)>,
-    new_maps: Query<&Handle<TiledMap>, Added<Handle<TiledMap>>>,
+    mut query: Query<(Entity, &Handle<TiledMapClient>, &mut Map)>,
+    new_maps: Query<&Handle<TiledMapClient>, Added<Handle<TiledMapClient>>>,
     layer_query: Query<&Layer>,
     chunk_query: Query<&Chunk>,
 ) {
-    let mut changed_maps = Vec::<Handle<TiledMap>>::default();
+    let mut changed_maps = Vec::<Handle<TiledMapClient>>::default();
     for event in map_events.iter() {
         match event {
             AssetEvent::Created { handle } => {
@@ -304,7 +334,7 @@ pub fn process_loaded_tile_maps(
                                             collider: match object.shape {
                                                 tiled::ObjectShape::Rect { width, height } => {
                                                     Collider::cuboid(width / 2., height / 2.)
-                                                },
+                                                }
                                                 _ => {
                                                     eprintln!("tiled: unsupported object shape!");
                                                     Collider::ball(0.)
@@ -321,6 +351,94 @@ pub fn process_loaded_tile_maps(
                                 eprintln!("tiled: unsupported layer type!")
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub fn process_loaded_tile_maps_server(
+    mut commands: Commands,
+    mut map_events: EventReader<AssetEvent<TiledMapServer>>,
+    maps: Res<Assets<TiledMapServer>>,
+    mut query: Query<(Entity, &Handle<TiledMapServer>)>,
+    new_maps: Query<&Handle<TiledMapServer>, Added<Handle<TiledMapServer>>>,
+) {
+    let mut changed_maps = Vec::<Handle<TiledMapServer>>::default();
+    for event in map_events.iter() {
+        match event {
+            AssetEvent::Created { handle } => {
+                log::info!("Map added!");
+                changed_maps.push(handle.clone());
+            }
+            AssetEvent::Modified { handle } => {
+                log::info!("Map changed!");
+                changed_maps.push(handle.clone());
+            }
+            AssetEvent::Removed { handle } => {
+                log::info!("Map removed!");
+                // if mesh was modified and removed in the same update, ignore the modification
+                // events are ordered so future modification events are ok
+                changed_maps = changed_maps
+                    .into_iter()
+                    .filter(|changed_handle| changed_handle == handle)
+                    .collect();
+            }
+        }
+    }
+
+    // If we have new map entities add them to the changed_maps list.
+    for new_map_handle in new_maps.iter() {
+        changed_maps.push(new_map_handle.clone_weak());
+    }
+
+    for changed_map in changed_maps.iter() {
+        for (_, map_handle) in query.iter_mut() {
+            // only deal with currently changed map
+            if map_handle != changed_map {
+                continue;
+            }
+            if let Some(tiled_map) = maps.get(map_handle) {
+                for (_layer_index, layer) in tiled_map.map.layers().enumerate() {
+                    // spawn collider entities
+                    if let tiled::LayerType::ObjectLayer(object_layer) = layer.layer_type() {
+                        let object_bundles: Vec<ColliderObjectBundle> = object_layer
+                            .objects()
+                            .filter_map(|object| {
+                                if object.obj_type != *"collision" {
+                                    return None;
+                                }
+
+                                let (width, height) = match object.shape {
+                                    tiled::ObjectShape::Rect { width, height } => (width, height),
+                                    _ => (0., 0.),
+                                };
+
+                                Some(ColliderObjectBundle {
+                                    transform: TransformBundle {
+                                        local: Transform::from_xyz(
+                                            object.x + width / 2.,
+                                            -(object.y + height / 2. - TILEMAP_HEIGHT),
+                                            998.,
+                                        ),
+                                        ..Default::default()
+                                    },
+                                    collider: match object.shape {
+                                        tiled::ObjectShape::Rect { width, height } => {
+                                            Collider::cuboid(width / 2., height / 2.)
+                                        }
+                                        _ => {
+                                            eprintln!("tiled: unsupported object shape!");
+                                            Collider::ball(0.)
+                                        }
+                                    },
+                                    body: RigidBody::Fixed,
+                                })
+                            })
+                            .collect();
+
+                        commands.spawn_batch(object_bundles);
                     }
                 }
             }

@@ -1,10 +1,8 @@
-mod connect;
-mod disconnect;
+mod connection;
 mod input;
 mod sync;
 
-use connect::handle_connect;
-use disconnect::handle_disconnect;
+use connection::handle_connection;
 use input::send_input;
 use sync::sync;
 
@@ -28,8 +26,7 @@ impl Plugin for MagusClientPlugin {
                 SystemSet::new()
                     .with_run_criteria(run_if_client_conected)
                     .with_system(send_input)
-                    .with_system(handle_connect)
-                    .with_system(handle_disconnect)
+                    .with_system(handle_connection)
                     .with_system(sync),
             );
     }

@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy::render::render_resource::TextureUsages;
 use bevy_ecs_tilemap::prelude::*;
 
-use self::loader::{TiledMap, TiledMapBundle, TiledMapPlugin};
+use self::loader::{TiledMapBundle, TiledLoader, process_loaded_tile_maps_client, process_loaded_tile_maps_server, TiledMapServer, TiledMapClient};
 
 // =========================================================
 // ====================== CONSTANTS ========================
@@ -19,10 +19,35 @@ pub const TILEMAP_HEIGHT: f32 = 800.;
 
 pub struct MagusTilemapPlugin;
 
-impl Plugin for MagusTilemapPlugin {
+impl MagusTilemapPlugin {
+    pub fn client() -> MagusTilemapPluginClient {
+        MagusTilemapPluginClient
+    }
+    pub fn server() -> MagusTilemapPluginServer {
+        MagusTilemapPluginServer
+    }
+}
+
+pub struct MagusTilemapPluginServer;
+
+impl Plugin for MagusTilemapPluginServer {
+    fn build(&self, app: &mut App) {
+        app
+            .add_asset::<TiledMapServer>()
+            .add_asset_loader(TiledLoader::server())
+            .add_system(process_loaded_tile_maps_server)
+            .add_startup_system(spawn_server);
+    }
+}
+
+pub struct MagusTilemapPluginClient;
+
+impl Plugin for MagusTilemapPluginClient {
     fn build(&self, app: &mut App) {
         app.add_plugin(TilemapPlugin)
-            .add_plugin(TiledMapPlugin)
+            .add_asset::<TiledMapClient>()
+            .add_asset_loader(TiledLoader::client())
+            .add_system(process_loaded_tile_maps_client)
             .add_startup_system(spawn)
             .add_system(set_texture_filters_to_nearest);
     }
@@ -34,7 +59,7 @@ impl Plugin for MagusTilemapPlugin {
 
 // ----- spawn tilemap -------
 fn spawn(mut commands: Commands, server: Res<AssetServer>) {
-    let handle: Handle<TiledMap> = server.load("tilemap/dungeon-tilemap.tmx");
+    let handle: Handle<TiledMapClient> = server.load("tilemap/dungeon-tilemap.tmx");
 
     let map_entity = commands.spawn().id();
 
@@ -44,6 +69,13 @@ fn spawn(mut commands: Commands, server: Res<AssetServer>) {
         transform: Transform::from_xyz(0.0, 0.0, 0.0),
         ..Default::default()
     });
+}
+
+fn spawn_server(mut commands: Commands, server: Res<AssetServer>) {
+    let handle: Handle<TiledMapServer> = server.load("tilemap/dungeon-tilemap.tmx");
+
+    commands.spawn()
+        .insert(handle);
 }
 
 //  boilerplate to make code run 

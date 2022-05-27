@@ -29,7 +29,7 @@ fn main() {
         .add_plugin(InputPlugin)
         .add_plugin(InputManagerPlugin::<PlayerAction>::default())
         .add_plugin(RenetClientPlugin)
-        .add_plugin(MagusTilemapPlugin)
+        .add_plugin(MagusTilemapPlugin::client())
         .add_plugin(PlayerPlugin::client())
         .add_plugin(MagusClientPlugin)
         .add_plugin(MagusCameraPlugin)
