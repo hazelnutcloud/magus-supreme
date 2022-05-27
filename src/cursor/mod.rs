@@ -81,16 +81,20 @@ fn lock_mouse(
     let window = windows.get_primary_mut().unwrap();
 
     if btn.pressed(MouseButton::Left) {
-        window.set_cursor_lock_mode(true);
-        window.set_cursor_visibility(false);
-
-        let mut visibility = cursor_query.single_mut();
-        visibility.is_visible = true;
+        if !window.cursor_locked() {
+            window.set_cursor_lock_mode(true);
+            window.set_cursor_visibility(false);
+    
+            let mut visibility = cursor_query.single_mut();
+            visibility.is_visible = true;
+        }
     }
 
     if key.pressed(KeyCode::Escape) {
-        window.set_cursor_lock_mode(false);
-        window.set_cursor_visibility(true);
+        if window.cursor_locked() {
+            window.set_cursor_lock_mode(false);
+            window.set_cursor_visibility(true);
+        }
     }
 }
 
