@@ -40,12 +40,13 @@ fn camera_movement(
     mut camera_query: Query<&mut Transform, With<Camera2d>>,
     cursor_query: Query<&GlobalTransform, With<Cursor>>,
 ) {
-    let player_transform = player_query.single();
-    let mut camera_transform = camera_query.single_mut();
-    let cursor_transform = cursor_query.single();
-
-    let focus_point = Vec2::lerp(player_transform.translation.truncate(), cursor_transform.translation.truncate(), 0.1);
-
-    camera_transform.translation.x = focus_point.x;
-    camera_transform.translation.y = focus_point.y;
+    if let Ok(player_transform) = player_query.get_single() {
+        let mut camera_transform = camera_query.single_mut();
+        let cursor_transform = cursor_query.single();
+    
+        let focus_point = Vec2::lerp(player_transform.translation.truncate(), cursor_transform.translation.truncate(), 0.1);
+    
+        camera_transform.translation.x = focus_point.x;
+        camera_transform.translation.y = focus_point.y;
+    }
 }

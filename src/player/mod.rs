@@ -4,13 +4,14 @@ use std::{
     time::Duration,
 };
 
-use benimator::{Play, SpriteSheetAnimation};
+use benimator::{SpriteSheetAnimation};
 use bevy::{math::const_vec3, prelude::*};
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::{
     prelude::{ActionState, InputMap},
-    Actionlike, InputManagerBundle,
+    Actionlike,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::tilemap::TILEMAP_HEIGHT;
 
@@ -42,8 +43,9 @@ impl Plugin for PlayerPluginClient {
         app
             .add_startup_system_to_stage(StartupStage::PreStartup, load_assets)
             .add_startup_system_to_stage(StartupStage::PreStartup, load_animations)
-            .add_startup_system(spawn)
-            .add_system(movement)
+            // .add_startup_system(spawn)
+            .add_system(map_input)
+            // .add_system(movement)
             .add_system(movement_animation)
             .add_system(update_z_index);
     }
@@ -62,12 +64,17 @@ impl Plugin for PlayerPluginServer {
 // ===================== COMPONENTS ========================
 // =========================================================
 
-#[derive(Component)]
-pub struct Player;
+// ----- player marker -------
+#[derive(Component, Default)]
+pub struct Player {
+    pub id: u64
+}
 
-#[derive(Component)]
-pub struct MovementSpeed(f32);
+// ---- movement speed -------
+#[derive(Component, Default)]
+pub struct MovementSpeed(pub f32);
 
+// ---- player physics -------
 #[derive(Bundle)]
 pub struct PhysicsBundle {
     body: RigidBody,
@@ -76,20 +83,18 @@ pub struct PhysicsBundle {
     constraint: LockedAxes,
 }
 
+// ----- player bundle -------
 #[derive(Bundle)]
-struct PlayerBundle {
-    player: Player,
-    movement_speed: MovementSpeed,
+pub struct PlayerBundle {
+    pub player: Player,
+    pub movement_speed: MovementSpeed,
+    pub input: PlayerInput,
     #[bundle]
-    physics: PhysicsBundle,
-    #[bundle]
-    sprite_sheet: SpriteSheetBundle,
-    #[bundle]
-    input_manager: InputManagerBundle<PlayerAction>,
+    pub physics: PhysicsBundle
 }
 
 impl PlayerBundle {
-    fn default_input_map() -> InputMap<PlayerAction> {
+    pub fn default_input_map() -> InputMap<PlayerAction> {
         use PlayerAction::*;
         let mut input_map = InputMap::default();
 
@@ -111,7 +116,7 @@ impl PlayerBundle {
         input_map
     }
 
-    fn default_physics() -> PhysicsBundle {
+    pub fn default_physics() -> PhysicsBundle {
         PhysicsBundle {
             collider: Collider::capsule_y(5., 5.),
             constraint: LockedAxes::ROTATION_LOCKED,
@@ -119,6 +124,15 @@ impl PlayerBundle {
             velocity: Velocity::default()
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Component, Default)]
+pub struct PlayerInput {
+    pub up: bool,
+    pub down: bool,
+    pub left: bool,
+    pub right: bool,
+    pub dash: bool
 }
 
 // =========================================================
@@ -138,11 +152,11 @@ pub enum PlayerAction {
 // ====================== RESOURCES ========================
 // =========================================================
 
-struct PlayerAtlas(Handle<TextureAtlas>);
+pub struct PlayerAtlas(pub Handle<TextureAtlas>);
 
-struct PlayerAnimations {
-    idle: Handle<SpriteSheetAnimation>,
-    moving: Handle<SpriteSheetAnimation>,
+pub struct PlayerAnimations {
+    pub idle: Handle<SpriteSheetAnimation>,
+    pub moving: Handle<SpriteSheetAnimation>,
 }
 
 // =========================================================
@@ -177,42 +191,34 @@ fn load_animations(mut commands: Commands, mut animations: ResMut<Assets<SpriteS
     commands.insert_resource(PlayerAnimations { idle, moving });
 }
 
-// ----- spawn player --------
-fn spawn(mut commands: Commands, spritesheet: Res<PlayerAtlas>, animations: Res<PlayerAnimations>) {
-    commands
-        .spawn_bundle(PlayerBundle {
-            sprite_sheet: SpriteSheetBundle {
-                texture_atlas: spritesheet.0.clone(),
-                transform: Transform::from_translation(SPAWN_POINT),
-                ..Default::default()
-            },
-            input_manager: InputManagerBundle {
-                action_state: ActionState::default(),
-                input_map: PlayerBundle::default_input_map(),
-            },
-            physics: PlayerBundle::default_physics(),
-            movement_speed: MovementSpeed(75.),
-            player: Player,
-        })
-        .insert(animations.idle.clone())
-        .insert(Play);
+// ------- map input ---------
+fn map_input(
+    mut query: Query<(&ActionState<PlayerAction>, &mut PlayerInput)>
+) {
+    if let Ok((action_state, mut player_input)) = query.get_single_mut() {
+        player_input.up = action_state.pressed(PlayerAction::Up);
+        player_input.down = action_state.pressed(PlayerAction::Down);
+        player_input.left = action_state.pressed(PlayerAction::Left);
+        player_input.right = action_state.pressed(PlayerAction::Right);
+        player_input.dash = action_state.pressed(PlayerAction::Dash);
+    }
 }
 
 // ---- handle movement ------
 fn movement(
-    mut query: Query<(&ActionState<PlayerAction>, &mut Velocity, &MovementSpeed), With<Player>>,
+    mut query: Query<(&PlayerInput, &mut Velocity, &MovementSpeed), With<Player>>,
 ) {
-    let (action_state, mut velocity, movement_speed) = query.single_mut();
-
-    let x = (action_state.pressed(PlayerAction::Right) as i8 - action_state.pressed(PlayerAction::Left) as i8) as f32;
-    let y = (action_state.pressed(PlayerAction::Up) as i8 - action_state.pressed(PlayerAction::Down) as i8) as f32;
-
-    if x != 0. && y != 0. {
-        velocity.linvel = Vec2::new(x, y).normalize() * movement_speed.0;
-        return;
+    for (player_input, mut velocity, movement_speed) in query.iter_mut() {
+        let x = (player_input.right as i8 - player_input.left as i8) as f32;
+        let y = (player_input.up as i8 - player_input.down as i8) as f32;
+    
+        if x != 0. && y != 0. {
+            velocity.linvel = Vec2::new(x, y).normalize() * movement_speed.0;
+            return;
+        }
+    
+        velocity.linvel = Vec2::new(x, y) * movement_speed.0;
     }
-
-    velocity.linvel = Vec2::new(x, y) * movement_speed.0;
 }
 
 // --- animate movement ------
@@ -228,37 +234,37 @@ fn movement_animation(
     animations: Res<PlayerAnimations>,
     mut last_facing_is_left: Local<bool>,
 ) {
-    let (velocity, mut sprite, mut animation) = query.single_mut();
-
-    let is_moving_horizontally = velocity.linvel.x != 0.;
-
-    if is_moving_horizontally {
-        let is_facing_left = velocity.linvel.x < 0.;
-        if is_facing_left != *last_facing_is_left {
-            *last_facing_is_left = is_facing_left;
+    for (velocity, mut sprite, mut animation) in query.iter_mut() {
+        let is_moving_horizontally = velocity.linvel.x != 0.;
+    
+        if is_moving_horizontally {
+            let is_facing_left = velocity.linvel.x < 0.;
+            if is_facing_left != *last_facing_is_left {
+                *last_facing_is_left = is_facing_left;
+            }
         }
-    }
-
-    sprite.flip_x = *last_facing_is_left;
-
-    let is_moving = velocity.linvel != Vec2::ZERO;
-
-    if is_moving {
-        if animation.deref() == &animations.moving {
-            return;
+    
+        sprite.flip_x = *last_facing_is_left;
+    
+        let is_moving = velocity.linvel != Vec2::ZERO;
+    
+        if is_moving {
+            if animation.deref() == &animations.moving {
+                return;
+            }
+            *animation = animations.moving.clone();
+        } else {
+            if animation.deref() == &animations.idle {
+                return;
+            }
+            *animation = animations.idle.clone();
         }
-        *animation = animations.moving.clone();
-    } else {
-        if animation.deref() == &animations.idle {
-            return;
-        }
-        *animation = animations.idle.clone();
     }
 }
 
 // ---- update z index -------
 fn update_z_index(mut query: Query<&mut Transform, (With<Player>, Changed<Transform>)>) {
-    if let Ok(mut player) = query.get_single_mut() {
+    for mut player in query.iter_mut() {
         player.translation.z = TILEMAP_HEIGHT - (player.translation.y - 9.); // distance of player's feet from top of map
     }
 }

@@ -1,10 +1,14 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use magus_supreme::player::PlayerPlugin;
-//TODO implement server code
+use bevy_renet::RenetServerPlugin;
+use magus_supreme::{player::PlayerPlugin, server::{MagusServerPlugin}};
+
 fn main() {
     App::new()
         .add_plugins(MinimalPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.))
-        .add_plugin(PlayerPlugin::server());
+        .add_plugin(RenetServerPlugin)
+        .add_plugin(PlayerPlugin::server())
+        .add_plugin(MagusServerPlugin)
+        .run();
 }
