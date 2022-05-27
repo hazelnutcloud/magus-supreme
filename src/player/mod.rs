@@ -43,10 +43,9 @@ impl Plugin for PlayerPluginClient {
         app
             .add_startup_system_to_stage(StartupStage::PreStartup, load_assets)
             .add_startup_system_to_stage(StartupStage::PreStartup, load_animations)
-            // .add_startup_system(spawn)
             .add_system(map_input)
-            // .add_system(movement)
             .add_system(movement_animation)
+            .add_system(movement)
             .add_system(update_z_index);
     }
 }

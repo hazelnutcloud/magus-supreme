@@ -7,10 +7,10 @@ pub fn sync(
     query: Query<(&Transform, &Player)>,
     mut server: ResMut<RenetServer>
 ) {
-    let mut players: HashMap<u64, [f32; 3]> = HashMap::new();
+    let mut players: HashMap<u64, [f32; 2]> = HashMap::new();
 
     for (transform, player) in query.iter() {
-        players.insert(player.id, transform.translation.into());
+        players.insert(player.id, transform.translation.truncate().into());
     }
 
     let sync_message = bincode::serialize(&players).unwrap();

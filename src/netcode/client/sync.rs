@@ -10,7 +10,8 @@ pub fn sync(mut client: ResMut<RenetClient>, room: Res<Room>, mut transform_quer
         for (id, translation) in players.iter() {
             if let Some(player) = room.players.get(id) {
                 if let Ok(mut transform) = transform_query.get_mut(*player) {
-                    transform.translation = Vec3::from_slice(translation);
+                    transform.translation.x = translation[0];
+                    transform.translation.y = translation[1];
                 }
             }
         }
