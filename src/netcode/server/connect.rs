@@ -17,9 +17,9 @@ pub fn handle_connected(
                 .spawn_bundle(PlayerBundle {
                     player: Player { id: *id },
                     movement_speed: MovementSpeed(75.),
-                    input: PlayerInput::default(),
-                    physics: PlayerBundle::default_physics()
+                    input: PlayerInput::default()
                 })
+                .insert_bundle(PlayerBundle::default_physics())
                 .insert_bundle(TransformBundle::from_transform(Transform::from_translation(SPAWN_POINT)))
                 .id();
 

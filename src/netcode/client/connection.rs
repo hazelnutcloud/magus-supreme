@@ -1,3 +1,4 @@
+use crate::player::AnimationState;
 use crate::player::{PlayerAtlas, SPAWN_POINT};
 use benimator::Play;
 use bevy::prelude::*;
@@ -25,14 +26,14 @@ pub fn handle_connection(
                     .spawn_bundle(PlayerBundle {
                         player: Player { id },
                         movement_speed: MovementSpeed(75.),
-                        input: PlayerInput::default(),
-                        physics: PlayerBundle::default_physics(),
+                        input: PlayerInput::default()
                     })
                     .insert_bundle(SpriteSheetBundle {
                         texture_atlas: spritesheet.0.clone(),
                         transform: Transform::from_translation(SPAWN_POINT),
                         ..Default::default()
                     })
+                    .insert(AnimationState::default())
                     .insert(animations.idle.clone())
                     .insert(Play)
                     .id();
@@ -41,7 +42,8 @@ pub fn handle_connection(
                     commands.entity(player).insert_bundle(InputManagerBundle {
                         action_state: ActionState::default(),
                         input_map: PlayerBundle::default_input_map(),
-                    });
+                    })
+                    .insert_bundle(PlayerBundle::default_physics());
                 }
     
                 room.players.insert(id, player);

@@ -1,20 +1,17 @@
 use bevy::input::InputPlugin;
-use bevy::input::system::exit_on_esc_system;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_renet::RenetClientPlugin;
 use leafwing_input_manager::plugin::InputManagerPlugin;
 use magus_supreme::camera::MagusCameraPlugin;
-use magus_supreme::cursor::CursorPlugin;
-use magus_supreme::player::{PlayerAction, PlayerPlugin};
+use magus_supreme::cursor::MagusCursorPlugin;
+use magus_supreme::player::{PlayerAction, MagusPlayerPlugin};
 use magus_supreme::tilemap::MagusTilemapPlugin;
 use magus_supreme::client::MagusClientPlugin;
 
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
-            cursor_locked: true,
-            cursor_visible: false,
             title: "Magus Supreme".into(),
             ..Default::default()
         })
@@ -30,10 +27,9 @@ fn main() {
         .add_plugin(InputManagerPlugin::<PlayerAction>::default())
         .add_plugin(RenetClientPlugin)
         .add_plugin(MagusTilemapPlugin::client())
-        .add_plugin(PlayerPlugin::client())
+        .add_plugin(MagusPlayerPlugin::client())
         .add_plugin(MagusClientPlugin)
         .add_plugin(MagusCameraPlugin)
-        .add_plugin(CursorPlugin)
-        .add_system(exit_on_esc_system)
+        .add_plugin(MagusCursorPlugin)
         .run();
 }

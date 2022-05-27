@@ -25,9 +25,9 @@ pub const SPAWN_POINT: Vec3 = const_vec3!([400., 200., 0.]);
 // ==================== PLAYER PLUGIN ======================
 // =========================================================
 
-pub struct PlayerPlugin;
+pub struct MagusPlayerPlugin;
 
-impl PlayerPlugin {
+impl MagusPlayerPlugin {
     pub fn client() -> PlayerPluginClient {
         PlayerPluginClient
     }
@@ -45,7 +45,7 @@ impl Plugin for PlayerPluginClient {
             .add_startup_system_to_stage(StartupStage::PreStartup, load_animations)
             .add_system(map_input)
             .add_system(movement_animation)
-            .add_system(movement)
+            .add_system(movement_client)
             .add_system(update_z_index);
     }
 }
@@ -73,6 +73,19 @@ pub struct Player {
 #[derive(Component, Default)]
 pub struct MovementSpeed(pub f32);
 
+#[derive(Component, Default)]
+pub struct AnimationState {
+    pub last_facing_is_left: bool,
+    pub state: PlayerState
+}
+
+#[derive(Default)]
+pub enum PlayerState {
+    #[default]
+    Idle,
+    Moving,
+}
+
 // ---- player physics -------
 #[derive(Bundle)]
 pub struct PhysicsBundle {
@@ -88,8 +101,6 @@ pub struct PlayerBundle {
     pub player: Player,
     pub movement_speed: MovementSpeed,
     pub input: PlayerInput,
-    #[bundle]
-    pub physics: PhysicsBundle
 }
 
 impl PlayerBundle {
@@ -220,43 +231,79 @@ fn movement(
     }
 }
 
+fn movement_client(
+    mut query: Query<(&PlayerInput, &mut Velocity, &MovementSpeed), With<ActionState<PlayerAction>>>,
+) {
+    for (player_input, mut velocity, movement_speed) in query.iter_mut() {
+        let x = (player_input.right as i8 - player_input.left as i8) as f32;
+        let y = (player_input.up as i8 - player_input.down as i8) as f32;
+    
+        if x != 0. && y != 0. {
+            velocity.linvel = Vec2::new(x, y).normalize() * movement_speed.0;
+            return;
+        }
+    
+        velocity.linvel = Vec2::new(x, y) * movement_speed.0;
+    }
+}
+
 // --- animate movement ------
 fn movement_animation(
-    mut query: Query<
+    mut player_query: Query<
         (
             &Velocity,
             &mut TextureAtlasSprite,
             &mut Handle<SpriteSheetAnimation>,
+            &mut AnimationState
         ),
-        With<Player>,
+        With<ActionState<PlayerAction>>,
     >,
+    mut npc_query: Query<(&mut TextureAtlasSprite, &mut Handle<SpriteSheetAnimation>, &AnimationState), (With<Player>, Without<ActionState<PlayerAction>>)>,
     animations: Res<PlayerAnimations>,
-    mut last_facing_is_left: Local<bool>,
 ) {
-    for (velocity, mut sprite, mut animation) in query.iter_mut() {
+    for (velocity, mut sprite, mut animation, mut animation_state) in player_query.iter_mut() {
         let is_moving_horizontally = velocity.linvel.x != 0.;
     
         if is_moving_horizontally {
             let is_facing_left = velocity.linvel.x < 0.;
-            if is_facing_left != *last_facing_is_left {
-                *last_facing_is_left = is_facing_left;
+            if is_facing_left != animation_state.last_facing_is_left {
+                animation_state.last_facing_is_left = is_facing_left;
             }
         }
     
-        sprite.flip_x = *last_facing_is_left;
+        sprite.flip_x = animation_state.last_facing_is_left;
     
         let is_moving = velocity.linvel != Vec2::ZERO;
     
         if is_moving {
             if animation.deref() == &animations.moving {
-                return;
+                continue;
             }
             *animation = animations.moving.clone();
         } else {
             if animation.deref() == &animations.idle {
-                return;
+                continue;
             }
             *animation = animations.idle.clone();
+        }
+    }
+
+    for (mut sprite, mut animation, animation_state) in npc_query.iter_mut() {
+        sprite.flip_x = animation_state.last_facing_is_left;
+
+        match animation_state.state {
+            PlayerState::Idle => {
+                if animation.deref() == &animations.idle {
+                    continue;
+                }
+                *animation = animations.idle.clone();
+            },
+            PlayerState::Moving => {
+                if animation.deref() == &animations.moving {
+                    continue;
+                }
+                *animation = animations.moving.clone();
+            },
         }
     }
 }

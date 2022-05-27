@@ -1,6 +1,7 @@
 use bevy::{prelude::*, render::camera::Camera2d};
+use leafwing_input_manager::prelude::ActionState;
 
-use crate::{player::{Player, SPAWN_POINT}, cursor::Cursor};
+use crate::{player::{Player, SPAWN_POINT, PlayerAction}, cursor::Cursor};
 
 // =========================================================
 // ==================== CAMERA PLUGIN ======================
@@ -36,7 +37,7 @@ pub fn spawn_camera(mut commands: Commands) {
 
 // ----- follow player -------
 fn camera_movement(
-    player_query: Query<&Transform, (With<Player>, Without<Camera2d>)>,
+    player_query: Query<&Transform, (With<Player>, Without<Camera2d>, With<ActionState<PlayerAction>>)>,
     mut camera_query: Query<&mut Transform, With<Camera2d>>,
     cursor_query: Query<&GlobalTransform, With<Cursor>>,
 ) {
