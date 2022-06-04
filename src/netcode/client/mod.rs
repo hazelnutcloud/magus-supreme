@@ -16,18 +16,24 @@ use bevy_renet::{
     run_if_client_conected,
 };
 
+use self::sync::server_reconciliation;
+
+use super::snapshot_interpolation::SnapshotInterpolation;
+
 pub struct MagusClientPlugin;
 
 impl Plugin for MagusClientPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.insert_resource(new_renet_client())
             .insert_resource(Room::default())
+            .insert_resource(SnapshotInterpolation::new(Some(30.)))
             .add_system_set(
                 SystemSet::new()
                     .with_run_criteria(run_if_client_conected)
                     .with_system(send_input)
                     .with_system(handle_connection)
-                    .with_system(sync),
+                    .with_system(sync)
+                    .with_system(server_reconciliation),
             );
     }
 }

@@ -1,3 +1,4 @@
+#![feature(div_duration)]
 pub mod camera;
 pub mod cursor;
 pub mod player;

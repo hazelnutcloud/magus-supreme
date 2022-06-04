@@ -14,6 +14,8 @@ use bevy::{prelude::*, utils::HashMap, core::FixedTimestep};
 use bevy_renet::renet::{NETCODE_KEY_BYTES, RenetServer, RenetConnectionConfig, ServerConfig};
 use serde::{Serialize, Deserialize};
 
+use super::snapshot_interpolation::SnapshotInterpolation;
+
 pub const PROTOCOL_ID: u64 = 1;
 pub const PRIVATE_KEY: &[u8; NETCODE_KEY_BYTES] = b"12346789012345678901234567890123";
 
@@ -24,6 +26,7 @@ impl Plugin for MagusServerPlugin {
         app
             .insert_resource(new_renet_server())
             .insert_resource(Room::default())
+            .insert_resource(SnapshotInterpolation::new(None))
             .add_system(handle_connected)
             .add_system(handle_disconnected)
             .add_system(handle_input)
