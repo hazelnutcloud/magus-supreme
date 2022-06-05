@@ -34,7 +34,7 @@ impl SnapshotInterpolation {
                 time_offset: -1,
                 autocorrect_time_offset: true,
                 server_time: Duration::from_secs(0),
-            }
+            };
         }
 
         SnapshotInterpolation {
@@ -104,14 +104,13 @@ impl SnapshotInterpolation {
             for entity in entities {
                 if let Some(older_entities) = older.entities.get(entity_key) {
                     if let Some(older_entity) = older_entities.iter().find(|e| e.id == entity.id) {
+                        let mut interpolated_entity = SnapolationEntity {
+                            id: entity.id,
+                            state: HashMap::new(),
+                        };
                         for state_key in state_keys.iter() {
                             if let Some(state_value) = entity.state.get(state_key) {
                                 if let Some(older_state_value) = older_entity.state.get(state_key) {
-                                    let mut interpolated_entity = SnapolationEntity {
-                                        id: entity.id,
-                                        state: HashMap::new(),
-                                    };
-
                                     match (state_value, older_state_value) {
                                         (
                                             StateValue::Number(number),
@@ -160,11 +159,10 @@ impl SnapshotInterpolation {
                                         }
                                         _ => panic!("non-matching state value!"),
                                     }
-
-                                    interpolated_entities.push(interpolated_entity);
                                 }
                             }
                         }
+                        interpolated_entities.push(interpolated_entity);
                     }
                 }
             }

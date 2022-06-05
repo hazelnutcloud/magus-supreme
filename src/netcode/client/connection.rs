@@ -19,7 +19,7 @@ pub fn handle_connection(
     while let Some(message) = client.receive_message(0) {
         let server_message = bincode::deserialize(&message).unwrap();
         match server_message {
-            ServerMessages::PlayerConnected { id } =>{
+            ServerMessages::PlayerConnected { id, position } =>{
                 println!("Player {} connected", id);
     
                 let player = commands
@@ -30,7 +30,7 @@ pub fn handle_connection(
                     })
                     .insert_bundle(SpriteSheetBundle {
                         texture_atlas: spritesheet.0.clone(),
-                        transform: Transform::from_translation(SPAWN_POINT),
+                        transform: Transform::from_translation(Vec3::new(position.x, position.y, SPAWN_POINT.z)),
                         ..Default::default()
                     })
                     .insert(AnimationState::default())

@@ -7,7 +7,8 @@ pub fn handle_connected(
     mut events: EventReader<ServerEvent>,
     mut commands: Commands,
     mut room: ResMut<Room>,
-    mut server: ResMut<RenetServer>
+    mut server: ResMut<RenetServer>,
+    transform_query: Query<&Transform>
 ) {
     for event in events.iter() {
         if let ServerEvent::ClientConnected(id, _) = event {
@@ -24,13 +25,15 @@ pub fn handle_connected(
                 .id();
 
             for &player_id in room.players.keys() {
-                let message = bincode::serialize(&ServerMessages::PlayerConnected { id: player_id }).unwrap();
+                let entity = room.players.get(&player_id).unwrap();
+                let transform = transform_query.get(*entity).unwrap();
+                let message = bincode::serialize(&ServerMessages::PlayerConnected { id: player_id, position: transform.translation.truncate() }).unwrap();
                 server.send_message(*id, 0, message);
             }
 
             room.players.insert(*id, player);
 
-            let message = bincode::serialize(&ServerMessages::PlayerConnected { id: *id }).unwrap();
+            let message = bincode::serialize(&ServerMessages::PlayerConnected { id: *id, position: SPAWN_POINT.truncate() }).unwrap();
             server.broadcast_message(0, message);
         }
     }

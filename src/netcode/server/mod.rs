@@ -41,7 +41,7 @@ pub struct Room {
 
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerMessages {
-    PlayerConnected { id: u64 },
+    PlayerConnected { id: u64, position: Vec2 },
     PlayerDisconnected { id: u64 }
 }
 

@@ -16,7 +16,7 @@ use bevy_renet::{
     run_if_client_conected,
 };
 
-use self::sync::server_reconciliation;
+use self::sync::snapshot_interpolation;
 
 use super::snapshot_interpolation::SnapshotInterpolation;
 
@@ -33,7 +33,7 @@ impl Plugin for MagusClientPlugin {
                     .with_system(send_input)
                     .with_system(handle_connection)
                     .with_system(sync)
-                    .with_system(server_reconciliation),
+                    .with_system(snapshot_interpolation),
             );
     }
 }
