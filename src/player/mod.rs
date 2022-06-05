@@ -248,6 +248,7 @@ fn movement_client(
 }
 
 // --- animate movement ------
+#[allow(clippy::type_complexity)]
 fn movement_animation(
     mut player_query: Query<
         (

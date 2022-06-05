@@ -16,7 +16,7 @@ pub fn sync (
         players.push(snapolation_entity);
     }
 
-    if players.len() == 0 {
+    if players.is_empty() {
         return
     }
     

@@ -80,27 +80,23 @@ fn lock_mouse(
 ) {
     let window = windows.get_primary_mut().unwrap();
 
-    if btn.pressed(MouseButton::Left) {
-        if !window.cursor_locked() {
-            window.set_cursor_lock_mode(true);
-            window.set_cursor_visibility(false);
-    
-            let mut visibility = cursor_query.single_mut();
-            visibility.is_visible = true;
-        }
+    if btn.pressed(MouseButton::Left) && !window.cursor_locked() {
+        window.set_cursor_lock_mode(true);
+        window.set_cursor_visibility(false);
+
+        let mut visibility = cursor_query.single_mut();
+        visibility.is_visible = true;
     }
 
-    if key.pressed(KeyCode::Escape) {
-        if window.cursor_locked() {
-            window.set_cursor_lock_mode(false);
-            window.set_cursor_visibility(true);
-        }
+    if key.pressed(KeyCode::Escape) && window.cursor_locked() {
+        window.set_cursor_lock_mode(false);
+        window.set_cursor_visibility(true);
     }
 }
 
 // -- move cursor parent -----
 fn move_cursor_parent(
-    player_query: Query<&Transform, (With<Player>, With<ActionState<PlayerAction>>, Changed<Transform>)>,
+    player_query: Query<&Transform, (With<ActionState<PlayerAction>>, Changed<Transform>)>,
     mut cursor_parent_query: Query<&mut Transform, (Without<Player>, With<CursorParent>)>,
     windows: Res<Windows>
 ) {
