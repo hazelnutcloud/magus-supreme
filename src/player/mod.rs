@@ -149,7 +149,7 @@ pub struct PlayerInput {
 
 impl PlayerInput {
     pub fn is_moving(&self) -> bool {
-        return self.up || self.down || self.left || self.right || self.dash;
+        self.up || self.down || self.left || self.right || self.dash
     }
 }
 

@@ -36,9 +36,9 @@
   <object id="29" type="collision" x="640" y="140" width="15.9091" height="339.727"/>
   <object id="30" type="collision" x="143.972" y="127.909" width="511.938" height="16"/>
   <object id="31" type="collision" x="143.909" y="140" width="16.0284" height="340"/>
-  <object id="32" type="collision" x="240.012" y="140.182" width="15.8972" height="25.9091"/>
-  <object id="33" type="collision" x="352.036" y="140.124" width="16.0277" height="25.9091"/>
-  <object id="34" type="collision" x="432.017" y="140.108" width="16.0277" height="25.9091"/>
-  <object id="35" type="collision" x="544.034" y="140.125" width="16.0277" height="25.9091"/>
+  <object id="32" type="collision" x="240.012" y="140.182" width="15.8972" height="19.4091"/>
+  <object id="33" type="collision" x="352.036" y="140.124" width="16.0277" height="19.6591"/>
+  <object id="34" type="collision" x="432.017" y="140.108" width="16.0277" height="19.9091"/>
+  <object id="35" type="collision" x="544.034" y="140.125" width="16.0277" height="20.1591"/>
  </objectgroup>
 </map>

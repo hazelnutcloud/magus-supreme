@@ -2,7 +2,7 @@ use bevy::{prelude::*, input::mouse::MouseMotion};
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::ActionState;
 
-use crate::{player::{SPAWN_POINT, Player, PlayerAction}, camera::ZOOM};
+use crate::{player::{SPAWN_POINT, PlayerAction}, camera::ZOOM};
 
 // =========================================================
 // ==================== CURSOR PLUGIN ======================
