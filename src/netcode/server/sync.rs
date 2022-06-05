@@ -5,7 +5,8 @@ use crate::{player::Player, netcode::snapshot_interpolation::{vault::{Snapolatio
 
 pub fn sync (
     query: Query<(&Transform, &Player)>,
-    mut server: ResMut<RenetServer>
+    mut server: ResMut<RenetServer>,
+    mut si: ResMut<SnapshotInterpolation>
 ) {
     let mut players: Vec<SnapolationEntity> = Vec::new();
 
@@ -29,4 +30,6 @@ pub fn sync (
     println!("message size: {} bytes", sync_message.len());
 
     server.broadcast_message(1, sync_message);
+
+    si.add_snapshot(snapshot);
 }

@@ -43,6 +43,7 @@ pub struct ColliderObjectBundle {
     transform: TransformBundle,
     body: RigidBody,
     collider: Collider,
+    collision_groups: CollisionGroups
 }
 
 // =========================================================
@@ -341,6 +342,7 @@ pub fn process_loaded_tile_maps_client(
                                                 }
                                             },
                                             body: RigidBody::Fixed,
+                                            collision_groups: CollisionGroups::new(0b10, 0b01)
                                         })
                                     })
                                     .collect();
@@ -434,6 +436,7 @@ pub fn process_loaded_tile_maps_server(
                                         }
                                     },
                                     body: RigidBody::Fixed,
+                                    collision_groups: CollisionGroups::new(0b10, 0b01)
                                 })
                             })
                             .collect();

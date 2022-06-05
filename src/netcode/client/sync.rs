@@ -1,14 +1,16 @@
 use crate::{
     netcode::snapshot_interpolation::{
-        vault::{Snapshot, StateValue},
+        vault::{Snapshot, StateValue, Vault},
         SnapshotInterpolation,
     },
-    player::{AnimationState, PlayerState},
+    player::{AnimationState, PlayerAction, PlayerInput, PlayerState},
     server::Room,
 };
 
 use bevy::prelude::*;
+use bevy_rapier2d::prelude::ExternalImpulse;
 use bevy_renet::renet::RenetClient;
+use leafwing_input_manager::prelude::ActionState;
 
 pub fn sync(mut client: ResMut<RenetClient>, mut si: ResMut<SnapshotInterpolation>) {
     while let Some(message) = client.receive_message(1) {
@@ -57,6 +59,68 @@ pub fn snapshot_interpolation(
                         transform.translation.y = *y;
                     }
                 }
+            }
+        }
+    }
+}
+
+pub fn server_reconciliation(
+    mut commands: Commands,
+    player_query: Query<
+        (Entity, &Vault, &PlayerInput),
+        With<ActionState<PlayerAction>>,
+    >,
+    mut si: ResMut<SnapshotInterpolation>,
+    client: Res<RenetClient>,
+) {
+    if let Ok((entity, vault, player_input)) = player_query.get_single() {
+        let mut server_position: Option<Vec2> = None;
+        let mut client_position: Option<Vec2> = None;
+
+        if let Some(server_snapshot) = si.vault.get_latest() {
+            if let Some(server_players) = server_snapshot.entities.get("players") {
+                if let Some(server_player) = server_players
+                    .iter()
+                    .find(|player| player.id == client.client_id())
+                {
+                    if let (Some(StateValue::Number(x)), Some(StateValue::Number(y))) =
+                        (server_player.state.get("x"), server_player.state.get("y"))
+                    {
+                        server_position = Some(Vec2::new(*x, *y));
+                    }
+                }
+            }
+
+            if let Some(client_snapshot) = vault.get_closest(server_snapshot.time) {
+                if let Some(client_players) = client_snapshot.entities.get("players") {
+                    if let Some(client_player) = client_players.first() {
+                        if let (Some(StateValue::Number(x)), Some(StateValue::Number(y))) =
+                            (client_player.state.get("x"), client_player.state.get("y"))
+                        {
+                            client_position = Some(Vec2::new(*x, *y));
+                        }
+                    }
+                }
+            }
+        }
+
+        if let (Some(server_position), Some(client_position)) = (server_position, client_position) {
+            let offset = server_position - client_position;
+
+            let correction = match player_input.is_moving() {
+                true => 30.,
+                false => 90.,
+            };
+
+            if offset.length() != 0. {
+                commands.entity(entity)
+                    .insert(ExternalImpulse {
+                        impulse: offset / correction,
+                        ..Default::default()
+                    });
+            } else {
+                commands.entity(entity)
+                    .remove::<ExternalImpulse>();
             }
         }
     }

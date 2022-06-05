@@ -93,6 +93,7 @@ pub struct PhysicsBundle {
     collider: Collider,
     velocity: Velocity,
     constraint: LockedAxes,
+    collision_groups: CollisionGroups
 }
 
 // ----- player bundle -------
@@ -131,7 +132,8 @@ impl PlayerBundle {
             collider: Collider::capsule_y(5., 5.),
             constraint: LockedAxes::ROTATION_LOCKED,
             body: RigidBody::Dynamic,
-            velocity: Velocity::default()
+            velocity: Velocity::default(),
+            collision_groups: CollisionGroups::new(0b01, 0b10)
         }
     }
 }
@@ -143,6 +145,12 @@ pub struct PlayerInput {
     pub left: bool,
     pub right: bool,
     pub dash: bool
+}
+
+impl PlayerInput {
+    pub fn is_moving(&self) -> bool {
+        return self.up || self.down || self.left || self.right || self.dash;
+    }
 }
 
 // =========================================================
@@ -234,15 +242,15 @@ fn movement(
 fn movement_client(
     mut query: Query<(&PlayerInput, &mut Velocity, &MovementSpeed), With<ActionState<PlayerAction>>>,
 ) {
-    for (player_input, mut velocity, movement_speed) in query.iter_mut() {
+    if let Ok((player_input, mut velocity, movement_speed)) = query.get_single_mut() {
         let x = (player_input.right as i8 - player_input.left as i8) as f32;
         let y = (player_input.up as i8 - player_input.down as i8) as f32;
-    
+
         if x != 0. && y != 0. {
             velocity.linvel = Vec2::new(x, y).normalize() * movement_speed.0;
             return;
         }
-    
+
         velocity.linvel = Vec2::new(x, y) * movement_speed.0;
     }
 }

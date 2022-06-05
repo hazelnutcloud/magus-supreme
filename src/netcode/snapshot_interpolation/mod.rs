@@ -10,7 +10,7 @@ use bevy::utils::HashMap;
 use vault::{SnapolationEntities, SnapolationEntity, Snapshot, StateValue, Vault};
 
 pub struct SnapshotInterpolation {
-    vault: Vault,
+    pub vault: Vault,
     interpolation_buffer: Duration,
     time_offset: i128,
     server_time: Duration,

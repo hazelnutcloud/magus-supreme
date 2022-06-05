@@ -97,7 +97,7 @@ fn lock_mouse(
 // -- move cursor parent -----
 fn move_cursor_parent(
     player_query: Query<&Transform, (With<ActionState<PlayerAction>>, Changed<Transform>)>,
-    mut cursor_parent_query: Query<&mut Transform, (Without<Player>, With<CursorParent>)>,
+    mut cursor_parent_query: Query<&mut Transform, (Without<ActionState<PlayerAction>>, With<CursorParent>)>,
     windows: Res<Windows>
 ) {
     let window = windows.get_primary().unwrap();

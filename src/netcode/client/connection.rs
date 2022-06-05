@@ -1,3 +1,4 @@
+use crate::netcode::snapshot_interpolation::vault::Vault;
 use crate::player::AnimationState;
 use crate::player::{PlayerAtlas, SPAWN_POINT};
 use benimator::Play;
@@ -43,7 +44,8 @@ pub fn handle_connection(
                         action_state: ActionState::default(),
                         input_map: PlayerBundle::default_input_map(),
                     })
-                    .insert_bundle(PlayerBundle::default_physics());
+                    .insert_bundle(PlayerBundle::default_physics())
+                    .insert(Vault::default());
                 }
     
                 room.players.insert(id, player);
