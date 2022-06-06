@@ -3,6 +3,7 @@ use crate::player::AnimationState;
 use crate::player::{PlayerAtlas, SPAWN_POINT};
 use benimator::Play;
 use bevy::prelude::*;
+use bevy_rapier2d::prelude::Velocity;
 use bevy_renet::renet::RenetClient;
 use leafwing_input_manager::prelude::ActionState;
 use leafwing_input_manager::prelude::InputManagerBundle;
@@ -34,6 +35,7 @@ pub fn handle_connection(
                         transform: Transform::from_translation(Vec3::new(position.x, position.y, SPAWN_POINT.z)),
                         ..Default::default()
                     })
+                    .insert(Velocity::default())
                     .insert(AnimationState::default())
                     .insert(animations.idle.clone())
                     .insert(Play)

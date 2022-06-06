@@ -3,12 +3,12 @@ use crate::{
         vault::{Snapshot, StateValue, Vault},
         SnapshotInterpolation,
     },
-    player::{AnimationState, PlayerAction, PlayerInput, PlayerState},
+    player::{PlayerAction, PlayerInput},
     server::Room,
 };
 
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::ExternalImpulse;
+use bevy_rapier2d::prelude::{ExternalImpulse, Velocity};
 use bevy_renet::renet::RenetClient;
 use leafwing_input_manager::prelude::ActionState;
 
@@ -24,7 +24,7 @@ pub fn snapshot_interpolation(
     client: Res<RenetClient>,
     mut si: ResMut<SnapshotInterpolation>,
     room: Res<Room>,
-    mut transform_query: Query<(&mut Transform, &mut AnimationState)>,
+    mut transform_query: Query<(&mut Transform, &mut Velocity)>,
 ) {
     if let Some(snapshot) = si.calc_interpolation("players", vec!["x".into(), "y".into()]) {
         for snapolated_entity in snapshot.entities.iter() {
@@ -33,27 +33,30 @@ pub fn snapshot_interpolation(
             }
 
             if let Some(entity) = room.players.get(&snapolated_entity.id) {
-                if let Ok((mut transform, mut animation_state)) = transform_query.get_mut(*entity) {
+                if let Ok((mut transform, mut velocity)) = transform_query.get_mut(*entity) {
                     if let (Some(StateValue::Number(x)), Some(StateValue::Number(y))) = (
                         snapolated_entity.state.get("x"),
                         snapolated_entity.state.get("y"),
                     ) {
-                        let velocity = Vec2::new(*x, *y) - transform.translation.truncate();
+                        let displacement = Vec2::new(*x, *y) - transform.translation.truncate();
+                        velocity.linvel.x = displacement.x * 100.;
+                        velocity.linvel.y = displacement.y * 100.;
 
-                        let is_moving_horizontally = velocity.x != 0.;
 
-                        if is_moving_horizontally {
-                            let is_facing_left = velocity.x < 0.;
-                            if is_facing_left != animation_state.last_facing_is_left {
-                                animation_state.last_facing_is_left = is_facing_left;
-                            }
-                        }
+                        // let is_moving_horizontally = velocity.x != 0.;
 
-                        if velocity != Vec2::ZERO {
-                            animation_state.state = PlayerState::Moving;
-                        } else {
-                            animation_state.state = PlayerState::Idle;
-                        }
+                        // if is_moving_horizontally {
+                        //     let is_facing_left = velocity.x < 0.;
+                        //     if is_facing_left != animation_state.last_facing_is_left {
+                        //         animation_state.last_facing_is_left = is_facing_left;
+                        //     }
+                        // }
+
+                        // if velocity != Vec2::ZERO {
+                        //     animation_state.state = PlayerState::Moving;
+                        // } else {
+                        //     animation_state.state = PlayerState::Idle;
+                        // }
 
                         transform.translation.x = *x;
                         transform.translation.y = *y;
@@ -65,15 +68,14 @@ pub fn snapshot_interpolation(
 }
 
 pub fn server_reconciliation(
-    mut commands: Commands,
-    player_query: Query<
-        (Entity, &Vault, &PlayerInput),
+    mut player_query: Query<
+        (&Vault, &PlayerInput, &mut ExternalImpulse),
         With<ActionState<PlayerAction>>,
     >,
     mut si: ResMut<SnapshotInterpolation>,
     client: Res<RenetClient>,
 ) {
-    if let Ok((entity, vault, player_input)) = player_query.get_single() {
+    if let Ok((vault, player_input, mut external_impulse)) = player_query.get_single_mut() {
         let mut server_position: Option<Vec2> = None;
         let mut client_position: Option<Vec2> = None;
 
@@ -113,14 +115,9 @@ pub fn server_reconciliation(
             };
 
             if offset.length() != 0. {
-                commands.entity(entity)
-                    .insert(ExternalImpulse {
-                        impulse: offset / correction,
-                        ..Default::default()
-                    });
+                external_impulse.impulse = offset / correction;
             } else {
-                commands.entity(entity)
-                    .remove::<ExternalImpulse>();
+                external_impulse.impulse = Vec2::ZERO;
             }
         }
     }

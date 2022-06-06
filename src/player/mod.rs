@@ -93,7 +93,8 @@ pub struct PhysicsBundle {
     collider: Collider,
     velocity: Velocity,
     constraint: LockedAxes,
-    collision_groups: CollisionGroups
+    collision_groups: CollisionGroups,
+    impulse: ExternalImpulse
 }
 
 // ----- player bundle -------
@@ -133,7 +134,8 @@ impl PlayerBundle {
             constraint: LockedAxes::ROTATION_LOCKED,
             body: RigidBody::Dynamic,
             velocity: Velocity::default(),
-            collision_groups: CollisionGroups::new(0b01, 0b10)
+            collision_groups: CollisionGroups::new(0b01, 0b10),
+            impulse: ExternalImpulse::default()
         }
     }
 }
@@ -265,13 +267,13 @@ fn movement_animation(
             &mut Handle<SpriteSheetAnimation>,
             &mut AnimationState
         ),
-        With<ActionState<PlayerAction>>,
+        With<Player>,
     >,
-    mut npc_query: Query<(&mut TextureAtlasSprite, &mut Handle<SpriteSheetAnimation>, &AnimationState), (With<Player>, Without<ActionState<PlayerAction>>)>,
+    // mut npc_query: Query<(&mut TextureAtlasSprite, &mut Handle<SpriteSheetAnimation>, &AnimationState), (With<Player>, Without<ActionState<PlayerAction>>)>,
     animations: Res<PlayerAnimations>,
 ) {
     for (velocity, mut sprite, mut animation, mut animation_state) in player_query.iter_mut() {
-        let is_moving_horizontally = velocity.linvel.x != 0.;
+        let is_moving_horizontally = velocity.linvel.x != 0. && velocity.linvel.x.abs() > 10.;
     
         if is_moving_horizontally {
             let is_facing_left = velocity.linvel.x < 0.;
@@ -284,7 +286,7 @@ fn movement_animation(
     
         let is_moving = velocity.linvel != Vec2::ZERO;
     
-        if is_moving {
+        if is_moving && velocity.linvel.length() > 10. {
             if animation.deref() == &animations.moving {
                 continue;
             }
@@ -297,24 +299,24 @@ fn movement_animation(
         }
     }
 
-    for (mut sprite, mut animation, animation_state) in npc_query.iter_mut() {
-        sprite.flip_x = animation_state.last_facing_is_left;
+    // for (mut sprite, mut animation, animation_state) in npc_query.iter_mut() {
+    //     sprite.flip_x = animation_state.last_facing_is_left;
 
-        match animation_state.state {
-            PlayerState::Idle => {
-                if animation.deref() == &animations.idle {
-                    continue;
-                }
-                *animation = animations.idle.clone();
-            },
-            PlayerState::Moving => {
-                if animation.deref() == &animations.moving {
-                    continue;
-                }
-                *animation = animations.moving.clone();
-            },
-        }
-    }
+    //     match animation_state.state {
+    //         PlayerState::Idle => {
+    //             if animation.deref() == &animations.idle {
+    //                 continue;
+    //             }
+    //             *animation = animations.idle.clone();
+    //         },
+    //         PlayerState::Moving => {
+    //             if animation.deref() == &animations.moving {
+    //                 continue;
+    //             }
+    //             *animation = animations.moving.clone();
+    //         },
+    //     }
+    // }
 }
 
 // ---- update z index -------
